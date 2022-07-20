@@ -43,6 +43,10 @@ uint8_t plist[] = {
 	0x70, 0x71, 0x72, 0x73, 0x75, 0x76, 0x77, //white pieces
 };
 
+uint8_t board_stm = WHITE;
+uint8_t board_last_target = -2;
+
+
 //and here comes 41 bytes (could be way less) of some crazy compression & branchless-ification (could be useful for some kind of variant program as well)
 //number of offsets for each piece
 const uint8_t noffsets[] = {
@@ -120,10 +124,9 @@ void print_move(MOVE move)
 
 }
 
-//TODO: implement adding castling, en passant square, and halfmove counter
+//TODO: implement halfmove counter
 void load_fen(std::string fen)
 {
-	//char canary[128] = {0}; //DEBUG
 	char position[80];
 	char turn;
 	char castling[5], enpassant[3];
@@ -196,9 +199,6 @@ void load_fen(std::string fen)
 	while (white_plist_idx < 16) plist[white_plist_idx++] = -1;
 	while (black_plist_idx < 16) plist[0x10 + black_plist_idx++] = -1;
 
-	//std::cout << std::endl;
-	//print_board_full(board);
-	
 	// the kings have to be at the front of the plist
 	for(sq = 0; sq < 120; sq++)
 	{
@@ -262,11 +262,13 @@ void load_fen(std::string fen)
 		}
 	}
 
-	// for (uint8_t i = 0; i < 128; i++) //Debug buffer overflow
-	// {
-	// 	if (canary[i]) printf("BUFFER OVERFLOW DETECTED!!! FIXME %2x\n", i);
-	// }
-	// std::cout << "\n";
+	board_stm = (turn == 'w') ? WHITE : BLACK;
+	if (enpassant[0] == '-')
+		board_last_target = -2;
+	else
+	{
+		board_last_target = enpassant[0] + (board_stm << 1) - 0x41;
+	}
 }
 
 

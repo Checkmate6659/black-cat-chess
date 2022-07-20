@@ -205,7 +205,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 }
 
 
-void search_root(uint8_t stm, uint32_t time_ms, uint8_t last_target)
+void search_root(uint32_t time_ms)
 {
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 	uint8_t depth = 3; //initial depth of 3 ply
@@ -220,7 +220,7 @@ void search_root(uint8_t stm, uint32_t time_ms, uint8_t last_target)
 		qcall_count = 0;
 
 		clock_t start = clock();
-		int16_t eval = search(stm, depth, last_target, MATE_SCORE, -MATE_SCORE, 0);
+		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0);
 
 		if (clock() < search_end_time) //only print out info if it's relevant
 		{

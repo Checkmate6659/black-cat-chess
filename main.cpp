@@ -31,20 +31,17 @@ int main(int argc, char** argv)
 
 
 	int time_ms = 10000;
-	int stm = BLACK;
 
 	if (argc >= 3) //there have to be enough arguments!!! (also stm not implemented in fen loading function lol)
 	{
 		load_fen(argv[1]);
 
-		// depth = atoi(argv[2]);
 		time_ms = atoi(argv[2]);
-		stm = atoi(argv[3]);
 	}
 
 	// print_board_full(board);
 
-	search_root(stm, time_ms, /* -2 */ 0x44);
+	search_root(time_ms);
 
 	return 0;
 }

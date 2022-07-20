@@ -93,6 +93,9 @@ void print_move(MOVE move); //Print a move.
 
 extern uint8_t board[128];
 extern uint8_t plist[32];
+extern uint8_t board_stm;
+extern uint8_t board_last_target;
+
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint8_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 const uint8_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
