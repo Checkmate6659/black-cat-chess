@@ -4,6 +4,7 @@
 
 #include "board.h"
 #include "search.h"
+#include "time_manager.h"
 
 #define __ENGINE_VERSION__ "1.0"
 
@@ -82,15 +83,38 @@ int main(int argc, char** argv)
 		}
 		else if (command == "go")
 		{
-			input_stream >> command;
-			if (command == "movetime")
-			{
-				input_stream >> command;
-				uint32_t time_ms = atoi(command.c_str());
+			uint32_t time_ms = 0;
+			uint32_t engine_time = 1000;
+			uint32_t increment = 0;
+			uint8_t movestogo = DEFAULT_MOVESTOGO;
 
-				search_root(time_ms);
+			while (input_stream)
+			{
+				std::string cur_info, cur_value;
+				input_stream >> cur_info >> cur_value;
+
+				if (!cur_info.length()) break;
+				if (cur_info == "movetime") //forcing of the maximum move time
+				{
+					time_ms = atoi(cur_value.c_str()); //set time in ms
+					break; //break out of the loop
+				}
+				if (cur_info == "movestogo") movestogo = atoi(cur_value.c_str()); //set number of moves to go
+				else if (board_stm == WHITE) //engine plays white
+				{
+					if (cur_info == "wtime") engine_time = atoi(cur_value.c_str());
+					else if (cur_info == "winc") increment = atoi(cur_value.c_str());
+				}
+				else //engine plays black
+				{
+					if (cur_info == "btime") engine_time = atoi(cur_value.c_str());
+					else if (cur_info == "binc") increment = atoi(cur_value.c_str());
+				}
 			}
-			//TODO: add time manager
+
+			if(!time_ms) time_ms = alloc_time(engine_time, increment, movestogo); //time_ms has not been set by a movetime command, so we need to calculate it
+			// printf("time: %u\n", time_ms);
+			search_root(time_ms);
 		}
 	}
 
