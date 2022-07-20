@@ -207,6 +207,9 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 void search_root(uint32_t time_ms)
 {
+	for (int i = 0; i < 64; i++) //clear the PV length table to prevent PV table bug
+		pv_length[i] = 0;
+
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 	uint8_t depth = 3; //initial depth of 3 ply
 
@@ -244,15 +247,6 @@ void search_root(uint32_t time_ms)
 
 		depth++; //increase the depth
 	}
-
-	// for (uint8_t i=0; i<MAX_DEPTH; i++)
-	// {
-	// 	printf("%d ", pv_length[i]);
-	// }
-	// for (uint8_t i = 0; i<MAX_DEPTH; i++) {
-   	// 	MOVE move = pv_table[0][i];
-	// 	print_move(move);
-	// }
 
 	//print out the best move
 	std::cout << "bestmove ";

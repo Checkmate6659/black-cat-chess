@@ -1,16 +1,16 @@
 #include <iostream>
+#include <sstream>
 #include <time.h>
 
 #include "board.h"
 #include "search.h"
 
+#define __ENGINE_VERSION__ "1.0"
+
+
 int main(int argc, char** argv)
 {
-	std::cout << "id name Black Cat v1.0\n";
-	std::cout << "id author Enigma\n";
-	std::cout << "uciok\n";
-
-	// print_board(board);
+	std::cout << "Black Cat v" __ENGINE_VERSION__ " by Enigma\n";
 
 	
 	// load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");   					//STARTING POSITION
@@ -22,26 +22,77 @@ int main(int argc, char** argv)
 
 	// load_fen("kr6/1q6/3pn3/8/8/1B6/PPP5/1K1R4 w - - 0 1"); //Search test position 1
 	// load_fen("5B2/6P1/1p6/8/1N6/kP6/2K5/8 w - - 0 1"); //Search test position 2: HAKMEM 70, mate in 3 after g8=N
-
-	// print_board(board);
-	// print_board_full(board);
-	// std::cout << "AFTER FEN LOAD\n";
-
-	load_fen("r1bqkbnr/ppp2ppp/2np4/4p3/2BPP3/5N2/PPP2PPP/RNBQK2R b KQkq d3 0 4");  	//ShaheryarSohail test position (modified, best move = gxh1=Q+)
+	// load_fen("r1bqkbnr/ppp2ppp/2np4/4p3/2BPP3/5N2/PPP2PPP/RNBQK2R b KQkq d3 0 4");  	//ShaheryarSohail test position
 
 
-	int time_ms = 10000;
-
-	if (argc >= 3) //there have to be enough arguments!!! (also stm not implemented in fen loading function lol)
+	bool loop_running = true;
+	while (loop_running)
 	{
-		load_fen(argv[1]);
+		std::string input_string;
+		std::getline(std::cin, input_string);
+		std::stringstream input_stream(input_string);
+		std::string command;
+		input_stream >> command;
 
-		time_ms = atoi(argv[2]);
+		if(command == "uci")
+		{
+			std::cout << "id name Black Cat v" __ENGINE_VERSION__ "\n";
+			std::cout << "id author Enigma\n";
+			std::cout << "uciok\n";
+		}
+		else if(command == "isready")
+		{
+			std::cout << "readyok\n";
+		}
+		else if(command == "quit")
+		{
+			loop_running = false;
+		}
+		else if(command == "display" || command == "print" || command == "disp" || command == "d")
+		{
+			print_board(board);
+		}
+		else if(command == "displayfull" || command == "printfull" || command == "dispf" || command == "df")
+		{
+			print_board_full(board);
+		}
+		else if(command == "position")
+		{
+			input_stream >> command;
+			if (command == "startpos") //just load the starting position
+			{
+				load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+			}
+			else //load from fen
+			{
+				std::string fen_string, current_element;
+
+				for (uint8_t i = 5; i; i--) //load the 5 "words" of a fen string
+				{
+					input_stream >> current_element;
+					fen_string.append(current_element);
+					if (i != 0) //only append the space if there are more words to go
+						fen_string.append(" ");
+				}
+				
+				load_fen(fen_string);
+			}
+
+			//TODO: implement moves
+		}
+		else if (command == "go")
+		{
+			input_stream >> command;
+			if (command == "movetime")
+			{
+				input_stream >> command;
+				uint32_t time_ms = atoi(command.c_str());
+
+				search_root(time_ms);
+			}
+			//TODO: add time manager
+		}
 	}
-
-	// print_board_full(board);
-
-	search_root(time_ms);
 
 	return 0;
 }
