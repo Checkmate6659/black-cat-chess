@@ -48,26 +48,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-
-/* $> cat ~/.ssh/id_rsa.pub
-
-
-Copy the whole output, then go to https://github.com/settings/keys > New SSH key > paste the output in the large box (the title is auto-generated)
-Once it's done, create a repo (public/private, not important)
-On the main page of the repo, Code > SSH > copy the given link
-Then, in your terminal:
-
-$> git clone [the link you copied]
-
-And you can then run your usual Git commands for committing/pushing */
-
-
-// before i do the normal git commands:
-/* Ok, then, in the folder with your source files:
-
-$> git init --initial-branch=main
-$> git remote add origin [the link you copied]
-$> git add [your source files, careful with object files and binaries !!!]
-$> git commit -m "Whatever commit message you want here
-$> git push --set-upstream origin main */
