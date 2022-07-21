@@ -68,7 +68,7 @@ int main(int argc, char** argv)
 			{
 				std::string fen_string, current_element;
 
-				for (uint8_t i = 5; i; i--) //load the 5 "words" of a fen string
+				for (uint8_t i = 6; i; i--) //load the 6 "words" of a fen string
 				{
 					input_stream >> current_element;
 					fen_string.append(current_element);
@@ -79,7 +79,67 @@ int main(int argc, char** argv)
 				load_fen(fen_string);
 			}
 
-			//TODO: implement moves
+			//Make necessary moves to get to the desired position
+			input_stream >> command;
+			if (command == "moves") //if there are moves to make
+			{
+				input_stream >> command; //read first move
+				while (input_stream)
+				{
+					bool promo = command.length() == 5; //if the move is a promotion, the UCI representation's length has 5 characters
+					uint8_t from_file = command[0] - 'a'; //get the file of the from square
+					uint8_t from_rank = '8' - command[1]; //get the rank of the from square
+					uint8_t to_file = command[2] - 'a'; //get the file of the to square
+					uint8_t to_rank = '8' - command[3]; //get the rank of the to square
+					uint8_t src = from_rank * 0x10 + from_file; //get the source square
+					uint8_t tgt = to_rank * 0x10 + to_file; //get the target square
+					uint8_t promo_piece = 0;
+					if (promo)
+					{
+						uint8_t PROMO_SYMBOLS[] = { //Symbols for promotion moves, table starts at 'b'
+							BISHOP, //b = bishop
+							0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, //c-m = useless
+							KNIGHT, //n = knight
+							0, 0, //o/p = useless
+							QUEEN, //q = queen
+							ROOK, //r = rook
+						};
+
+						promo_piece = PROMO_SYMBOLS[command[4] - 'b']; //get the promotion piece
+					}
+
+					MLIST mlist;
+					generate_moves(&mlist, board_stm, board_last_target); //generate all moves from the current position
+					MOVE input_move = mlist.moves[0]; //get the first move (just to be safe)
+					while (--mlist.count)
+					{
+						MOVE current_move = mlist.moves[mlist.count]; //get the current move
+
+						if (!promo) //the move is not a promotion
+						{
+							if (current_move.src == src && current_move.tgt == tgt && !(current_move.flags & F_PROMO)) //if the move is the one we want
+							{
+								input_move = current_move; //set the input move to the current move
+								break; //get out of the loop
+							}
+						}
+						else
+						{
+							if (current_move.src == src && current_move.tgt == tgt && (current_move.flags & F_PROMO)
+								&& current_move.promo == promo_piece) //if the move is the one we want, promoting to the correct piece
+							{
+								input_move = current_move; //set the input move to the current move
+								break; //get out of the loop
+							}
+						}
+					}
+
+					make_move(board_stm, input_move); //make the move
+					board_stm ^= ENEMY; //switch sides
+					board_last_target = (input_move.flags & F_DPP) ? tgt : -2; //set the last target square if we made a double pawn push
+					input_stream >> command; //try reading next move
+				}
+			}
 		}
 		else if (command == "go")
 		{

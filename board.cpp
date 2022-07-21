@@ -116,7 +116,7 @@ void print_board_full(uint8_t* b)
 
 void print_move(MOVE move)
 {
-	char promo_symbols[] = "???N?BRQ";
+	char promo_symbols[] = "???n?brq";
 	if (move.flags & F_PROMO)
 		printf("%c%d%c%d%c ", (move.src & 7) + 'a', 8 - (move.src >> 4), (move.tgt & 7) + 'a', 8 - (move.tgt >> 4), promo_symbols[move.promo & PTYPE]);
 	else
