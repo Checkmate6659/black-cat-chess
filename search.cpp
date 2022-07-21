@@ -119,6 +119,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			mlist.count--;
 
+			node_count++;
+
 			MOVE curmove = mlist.moves[mlist.count];
 			MOVE_RESULT res = make_move(stm, curmove);
 
@@ -168,7 +170,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 	order_moves(&mlist); //sort the moves by score
 
-	node_count++;
+	//node_count++;
 	int16_t stand_pat = evaluate() * ((stm & BLACK) ? -1 : 1); //stand pat score
 	if (stand_pat >= beta)
 		return beta;
@@ -185,6 +187,8 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		mlist.count--;
 		remaining_moves--;
+
+		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
 		MOVE_RESULT res = make_move(stm, curmove);
