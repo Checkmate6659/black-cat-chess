@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 		else if (command == "go")
 		{
 			uint32_t time_ms = 0;
-			uint32_t engine_time = 1000;
+			uint32_t engine_time = DEFAULT_ENGINE_TIME;
 			uint32_t increment = 0;
 			uint8_t movestogo = DEFAULT_MOVESTOGO;
 
