@@ -67,10 +67,6 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
-//Tricks to keep in mind:
-//Full-legality castling cheap: generate castling AFTER other king moves (except that fucks with move ordering, so we probably won't do that)
-//En passant: when you know it's en passant, you can remove the piece above/below the target (it's almost free!)
-
 
 void print_board(uint8_t *b)
 {
@@ -145,7 +141,6 @@ void load_fen(std::string fen)
 	{
 		char c = position[i];
 
-		//std::cout << c;
 		if (c == '\0') break; //END OF STRING
 		else if (c == '/')
 		{
@@ -280,7 +275,6 @@ uint8_t sq_attacked(uint8_t target, uint8_t attacker)
 	for (uint8_t plist_idx = (attacker & 16) ^ 16; plist_idx < end_value; plist_idx++) //iterate through the attacker's pieces
 	{
 		uint8_t cur_sq = plist[plist_idx];
-		//printf("%x=>%x %x %x\n", plist_idx, cur_sq, board[cur_sq] & ENEMY, board[cur_sq] & PTYPE);
 
 		if (cur_sq & OFFBOARD) continue; //the piece has been captured: signaled by an off-the-board square (could improve that in the future)
 
@@ -294,8 +288,6 @@ uint8_t sq_attacked(uint8_t target, uint8_t attacker)
 
 		//now we have to iterate through ALL the squares in that direction!
 		int8_t offset = RAY_OFFSETS[rel];
-
-		//printf("%x:%x,%x,%x,%x\n", cur_sq, target, ray, rel, offset);
 
 		cur_sq -= offset; //i fucked up: offset is always the wrong sign
 
@@ -382,11 +374,7 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 
 					mlist->count++;
 				}
-				// else
-				// {
-				// 	//we can see here that ep target is reached
-				// 	printf("PAWN %x CURTGT %x\n", sq, current_target);
-				// }
+
 				current_target += offset;
 
 				//THE NEXT LINE COULD BE IMPROVED!
@@ -662,8 +650,4 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 			plist[board[move.src + 4]] = move.src - 4; //same goes here
 		}
 	}
-	// else if (move.flags & F_PROMO)
-	// {
-	// 	board[move.src] = move_result.prev_state; //restore pawn type (white or black pawn)
-	// }
 }

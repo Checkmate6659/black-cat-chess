@@ -4,6 +4,7 @@
 #include "board.h"
 #include "eval.h"
 #include "order.h"
+#include "posix.h"
 
 #define MAX_DEPTH 128 //maximum depth: DO NOT SET ABOVE 256!
 

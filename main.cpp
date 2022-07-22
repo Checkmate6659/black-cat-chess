@@ -176,6 +176,39 @@ int main(int argc, char** argv)
 			// printf("time: %u\n", time_ms);
 			search_root(time_ms);
 		}
+		else if (command  == "perft")
+		{
+			input_stream >> command;
+			uint8_t depth = atoi(command.c_str()) - 1;
+
+			uint64_t nodes = 0;
+			clock_t start = clock();
+
+			MLIST mlist;
+			generate_moves(&mlist, board_stm, board_last_target); //generate all moves from the current position
+
+			while (mlist.count)
+			{
+				MOVE curmove = mlist.moves[--mlist.count]; //get the last move
+				MOVE_RESULT res = make_move(board_stm, curmove); //make the move
+
+				uint64_t cur_move_nodes = perft(board_stm ^ ENEMY, curmove.tgt, depth);
+				if (!cur_move_nodes) continue; //move was illegal: 0 nodes
+
+				nodes += cur_move_nodes;
+				print_move(curmove);
+				std::cout << cur_move_nodes << std::endl;
+
+				unmake_move(board_stm, curmove, res); //unmake the move
+			}
+
+			clock_t end = clock();
+			double perft_time = (end - start) * 1000 / (double)CLOCKS_PER_SEC;
+
+			std::cout << "Nodes: " << nodes << std::endl;
+			std::cout << "Time: " << perft_time << std::endl;
+			std::cout << "NPS: " << (uint64_t)(nodes * 1000 / perft_time) << std::endl;
+		}
 	}
 
 	return 0;

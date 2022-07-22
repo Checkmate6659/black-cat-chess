@@ -21,11 +21,9 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 		MLIST mlist;
 		generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
-		//if(board[mlist.moves[mlist.count - 1].tgt]) printf("%x\n", board[mlist.moves[mlist.count - 1].tgt]); //gives all 0s in startpos
 		//if last move is king capture, then the position is illegal and should NOT count!
 		if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING)
 		{
-			//printf("ILLEGAL MOVE DETECTED\n");
 			return 0;
 		}
 
@@ -36,34 +34,18 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 			mlist.count--; //only lower mlist.count HERE!
 
 			MOVE curmove = mlist.moves[mlist.count];
-
-			/* if ((board[curmove.tgt] & PTYPE) == KING) //we're taking a king! that's illegal!
-			{
-				printf("ILLEGAL MOVE DETECTED 2 ELECTRIC BOOGALOO\n");
-				return 0;
-			} */
-
-			/*if (curmove.flags & F_DPP && (curmove.src ^ curmove.tgt) != 0x20) //BAD DPP
-			{
-				printf("BAD DPP DETECTED %x:%x\n", curmove.src, curmove.tgt);
-				print_board_full(board);
-			}*/
-
-			//make/unmake the move!
-			/*if ( curmove.flags & F_EP) {
-				// printf("EP %x:%x %x LT%x\n", curmove.src, curmove.tgt, stm, last_target);
-				print_board(board);
-			} */
 			MOVE_RESULT res = make_move(stm, curmove);
-			//curmove.tgt n'est PAS SUR L'ECHIQUIER!
-			//if (curmove.flags & F_DPP) printf("%x:%x\n", curmove.src, curmove.tgt);
-			/* if (curmove.flags & F_EP){
-				print_board(board);
-			} */
+
+			//Failed optimization: if the move is illegal, then we should not count it!
+			//Reduced NPS from ~15M to ~10M
+			// if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
+			// {
+			// 	unmake_move(stm, curmove, res); //just skip it
+			// 	continue;
+			// }
+
 			sum += perft(stm ^ ENEMY, (curmove.flags & F_DPP) ? curmove.tgt : -2, depth);
 			unmake_move(stm, curmove, res);
-
-			//printf("OK %x:%x\n", curmove.src, curmove.tgt);
 		}
 
 		return sum;
@@ -88,6 +70,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			// depth = 0; //if i want to use the newly searched moves (later optimization)
 			return 0;
 		}
+		else if (!(qcall_count & 0xFFFF)) //check for input available 16 times less, since it's very slow
+		{
+			if (kbhit())
+			{
+				search_end_time = 0; //force the search time to be 0, so it won't increase depth infinitely and crash
+				return 0;
+			}
+		}
 	}
 	if (depth)
 	{
@@ -107,8 +97,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		else if (!mlist.count)
 		{
 			//This safety check might not be safe!
-			//if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) return -MATE_SCORE; //king under attack: checkmate!
-			return 0; //stalemate!
+			if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) return MATE_SCORE + ply; //our king is under attack: we lose!
+			return 0; //stalemate: no legal move, king not under attack
 		}
 
 		pv_length[ply] = ply; //initialize current PV length
@@ -123,6 +113,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 			MOVE curmove = mlist.moves[mlist.count];
 			MOVE_RESULT res = make_move(stm, curmove);
+
+			//Failed optimization: if the move is illegal, then we should not search it!
+			// if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
+			// {
+			// 	unmake_move(stm, curmove, res); //just skip it
+			// 	continue;
+			// }
 
 			int16_t eval = -search(stm ^ ENEMY, depth, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, ply + 1);
 
@@ -215,7 +212,7 @@ void search_root(uint32_t time_ms)
 		pv_length[i] = 0;
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
-	uint8_t depth = 3; //initial depth of 3 ply
+	uint8_t depth = 1;
 
 	MOVE best_move;
 
