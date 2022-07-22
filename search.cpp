@@ -10,147 +10,146 @@ uint64_t qcall_count = 0;
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
 
-uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
-{
-	if (depth)
-	{
-		--depth; //we only need to subtract once, and it is right here that we will do it
-		//printf("ENTERED PERFT\n");
 
-		//iterate through all legal moves
-		MLIST mlist;
-		generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
-
-		//if last move is king capture, then the position is illegal and should NOT count!
-		if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING)
-		{
-			return 0;
-		}
-
-		uint64_t sum = 0;
-
-		while (mlist.count)
-		{
-			mlist.count--; //only lower mlist.count HERE!
-
-			MOVE curmove = mlist.moves[mlist.count];
-			MOVE_RESULT res = make_move(stm, curmove);
-
-			//Failed optimization: if the move is illegal, then we should not count it!
-			//Reduced NPS from ~15M to ~10M
-			// if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
-			// {
-			// 	unmake_move(stm, curmove, res); //just skip it
-			// 	continue;
-			// }
-
-			sum += perft(stm ^ ENEMY, (curmove.flags & F_DPP) ? curmove.tgt : -2, depth);
-			unmake_move(stm, curmove, res);
-		}
-
-		return sum;
-	}
-
-	//otherwise, we just return a single node (but only if the position is legal!)
-	if (sq_attacked(plist[stm & 16], stm) != 0xFF) //0 is the king's pos in the piece list (for debug only)
-		return 0;
-
-	return 1;
-}
-
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint8_t ply)
+inline bool check_time() //Returns true if there is no time left or if a keystroke has been detected
 {
 	if (!(qcall_count & 0x0FFF)) //check every 4096 nodes
 	{
-		//TODO: implement key stroke stuff (when you press a key during search, it will stop the search)
 		clock_t now = clock(); //if we're past the time limit, return immediately
 		if (now > search_end_time)
 		{
 			//stop searching
-			// depth = 0; //if i want to use the newly searched moves (later optimization)
-			return 0;
+			return true;
 		}
 		else if (!(qcall_count & 0xFFFF)) //check for input available 16 times less, since it's very slow
 		{
 			if (kbhit())
 			{
 				search_end_time = 0; //force the search time to be 0, so it won't increase depth infinitely and crash
-				return 0;
+				return true;
 			}
 		}
 	}
-	if (depth)
-	{
-		--depth;
 
-		MLIST mlist;
-		generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
-
-		//The king capture should NOT be given a mate score!
-		//If i get pruning in the engine, i will have no guarantee the moves im playing are legal
-		//except if i do it in a kinda slow way...
-		//or spend a bunch of time optimizing movegen
-		if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING) //the king is under attack! we must return immediately
-		{
-			return -MATE_SCORE - ply; //we win! and the less moves we used, the better!
-		}
-		else if (!mlist.count)
-		{
-			//This safety check might not be safe!
-			if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) return MATE_SCORE + ply; //our king is under attack: we lose!
-			return 0; //stalemate: no legal move, king not under attack
-		}
-
-		pv_length[ply] = ply; //initialize current PV length
-
-		order_moves(&mlist); //sort the moves by score
-
-		while (mlist.count) //iterate through it backwards
-		{
-			mlist.count--;
-
-			node_count++;
-
-			MOVE curmove = mlist.moves[mlist.count];
-			MOVE_RESULT res = make_move(stm, curmove);
-
-			//Failed optimization: if the move is illegal, then we should not search it!
-			// if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
-			// {
-			// 	unmake_move(stm, curmove, res); //just skip it
-			// 	continue;
-			// }
-
-			int16_t eval = -search(stm ^ ENEMY, depth, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, ply + 1);
-
-			unmake_move(stm, curmove, res);
-
-			if (eval > alpha) //new best move!
-			{
-				pv_table[ply][ply] = curmove; //update principal variation (TODO: test doing after beta cutoff to try get extra speed)
-				uint8_t next_ply = ply + 1;
-				while(pv_length[ply + 1] > next_ply) {
-					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-					next_ply++;
-				}
-				// pv_length[ply] = pv_length[ply + 1]; //update PV length
-				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length (modified)
-				// assert(pv_length[ply]);
-
-				alpha = eval;
-				if (alpha >= beta)
-					return beta;
-			}
-		}
-
-		return alpha;
-	}
-	qcall_count++;
-	return qsearch(stm, alpha, beta);
-	// return evaluate() * ((stm & BLACK) ? -1 : 1);
+	return false;
 }
 
-//BUG HERE: if i switch the evaluations around, it sometimes works better or worse
+uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
+{
+	if (!depth) //out of depth: return
+		return 1;
+
+	//iterate through all legal moves
+	MLIST mlist;
+	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
+
+	uint64_t sum = 0;
+
+	while (mlist.count)
+	{
+		mlist.count--; //only lower mlist.count HERE!
+
+		MOVE curmove = mlist.moves[mlist.count];
+		MOVE_RESULT res = make_move(stm, curmove);
+
+		//Failed optimization: if the move is illegal, then we should not count it!
+		//Reduced NPS from ~15M to ~10M
+		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
+		{
+			unmake_move(stm, curmove, res); //just skip it
+			continue;
+		}
+
+		sum += perft(stm ^ ENEMY, (curmove.flags & F_DPP) ? curmove.tgt : -2, depth - 1);
+		unmake_move(stm, curmove, res);
+	}
+
+	return sum;
+}
+
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint8_t ply)
+{
+	if (!depth)
+	{
+		qcall_count++;
+		return qsearch(stm, alpha, beta);
+	}
+
+	if (check_time())
+		return 0; //ran out of time: interrupt search immediately
+
+	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
+	uint8_t legal_move_count = 0;
+
+	MLIST mlist;
+	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
+
+	//The king capture should NOT be given a mate score!
+	//If i get pruning in the engine, i will have no guarantee the moves im playing are legal
+	//except if i do it in a kinda slow way...
+	//or spend a bunch of time optimizing movegen
+	// if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING) //the king is under attack! we must return immediately
+	// {
+	// 	return -MATE_SCORE - ply; //we win! and the less moves we used, the better!
+	// }
+	// else if (!mlist.count)
+	// {
+	// 	//This safety check might not be safe!
+	// 	if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) return MATE_SCORE + ply; //our king is under attack: we lose!
+	// 	return 0; //stalemate: no legal move, king not under attack
+	// }
+
+	//NOTE: the following statement will only be of any use when partial or full move legality will be implemented!
+	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
+
+	pv_length[ply] = ply; //initialize current PV length
+
+	order_moves(&mlist); //sort the moves by score
+
+	while (mlist.count) //iterate through it backwards
+	{
+		mlist.count--;
+
+		node_count++;
+
+		MOVE curmove = mlist.moves[mlist.count];
+		MOVE_RESULT res = make_move(stm, curmove);
+
+		//Failed optimization: if the move is illegal, then we should not search it!
+		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
+		{
+			unmake_move(stm, curmove, res); //just skip it
+			continue;
+		}
+
+		legal_move_count++;
+
+		int16_t eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, ply + 1);
+
+		unmake_move(stm, curmove, res);
+
+		if (eval > alpha) //new best move!
+		{
+			pv_table[ply][ply] = curmove; //update principal variation (TODO: test doing after beta cutoff to try get extra speed)
+			uint8_t next_ply = ply + 1;
+			while(pv_length[ply + 1] > next_ply) {
+				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+				next_ply++;
+			}
+			pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
+
+			alpha = eval;
+			if (alpha >= beta)
+				return beta;
+		}
+	}
+
+	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
+		return incheck ? MATE_SCORE + ply : 0; //king in check = checkmate (we lose)
+
+	return alpha;
+}
+
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 {
 	MLIST mlist;
@@ -189,6 +188,12 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		MOVE curmove = mlist.moves[mlist.count];
 		MOVE_RESULT res = make_move(stm, curmove);
+
+		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
+		{
+			unmake_move(stm, curmove, res); //just skip it
+			continue;
+		}
 
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 

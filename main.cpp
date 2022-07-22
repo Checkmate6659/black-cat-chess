@@ -6,7 +6,7 @@
 #include "search.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "1.0a"
+#define __ENGINE_VERSION__ "1.1a"
 
 
 int main(int argc, char** argv)
@@ -192,8 +192,13 @@ int main(int argc, char** argv)
 				MOVE curmove = mlist.moves[--mlist.count]; //get the last move
 				MOVE_RESULT res = make_move(board_stm, curmove); //make the move
 
-				uint64_t cur_move_nodes = perft(board_stm ^ ENEMY, curmove.tgt, depth);
-				if (!cur_move_nodes) continue; //move was illegal: 0 nodes
+				if (sq_attacked(plist[(board_stm & 16) ^ 16], board_stm ^ ENEMY) != 0xFF) //illegal move detected!
+				{
+					unmake_move(board_stm, curmove, res); //unmake the move
+					continue;
+				}
+
+				uint64_t cur_move_nodes = perft(board_stm ^ ENEMY, (curmove.flags & F_DPP) ? curmove.tgt : -2, depth);
 
 				nodes += cur_move_nodes;
 				print_move(curmove);
