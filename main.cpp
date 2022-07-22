@@ -6,7 +6,7 @@
 #include "search.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "1.0"
+#define __ENGINE_VERSION__ "1.0a"
 
 
 int main(int argc, char** argv)
