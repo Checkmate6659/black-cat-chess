@@ -115,6 +115,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		if (eval > alpha) //new best move!
 		{
+			alpha = eval;
+
 			pv_table[ply][ply] = curmove; //update principal variation (TODO: test doing after beta cutoff to try get extra speed)
 			uint8_t next_ply = ply + 1;
 			while(pv_length[ply + 1] > next_ply) {
@@ -123,20 +125,21 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			}
 			pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 
-			alpha = eval;
+			uint16_t move_id = MOVE_ID(curmove);
+			if (curmove.flags < F_CAPT)
+			{
+				//Add history bonus
+				history[move_id] += depth * depth; //add the square of the remaining depth (favor moves close to root)
+			}
+
 			if (alpha >= beta) //beta cutoff
 			{
 				//Killer move: not a capture nor a promotion
 				if (curmove.flags < F_CAPT)
 				{
-					uint16_t move_id = MOVE_ID(curmove);
-
 					//Handle killer moves
 					killers[ply][1] = killers[ply][0];
 					killers[ply][0] = move_id;
-
-					//Add history bonus
-					history[move_id] += depth * depth; //add the square of the remaining depth (favor moves close to root)
 				}
 
 				return beta;
