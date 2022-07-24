@@ -19,17 +19,6 @@ void clear_history()
     for (uint16_t i = 0; i < 64 * 64; i++) history[i] = 0;
 }
 
-uint8_t uint32_to_score(uint32_t v) // http://graphics.stanford.edu/~seander/bithacks.html
-{
-    unsigned int t, tt;
-
-    if (tt = v >> 16)
-    {
-        return (t = tt >> 8) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
-    }
-    return (t = v >> 8) ? 8 + LogTable256[t] : LogTable256[v];
-}
-
 void order_moves(MLIST *mlist, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score
@@ -61,8 +50,7 @@ void order_moves(MLIST *mlist, uint8_t ply)
             else
             {
                 curmove.score = SCORE_QUIET;
-                // curmove.score += logUniformOutput(history[move_id]); //BSR should do the same, but it doesn't
-                curmove.score += uint32_to_score(history[move_id]);
+                curmove.score += history[move_id];
                 // printf("%x\n", curmove.score);
             }
         }

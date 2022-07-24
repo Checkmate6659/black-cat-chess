@@ -37,19 +37,19 @@
 #define F_QCASTLE 0x01
 
 //Move scores (I will have to rework this later)
-#define SCORE_HASH 0xFF //Hash move
-#define SCORE_PROMO_Q 0xFE //Promotion to queen (only promo valued before captures)
-#define SCORE_PROMO_N 0xC5 //Promotion to knight
-#define SCORE_PROMO_R 0xC4 //Promotion to rook
-#define SCORE_PROMO_B 0xC3 //Promotion to bishop
-#define SCORE_CAPT 0xC6 //Capturing a piece (with MVV-LVA: add (VICTIM << 3) - AGGRESSOR => spans from 0xC7 to 0xFD, since victim is minimum 0x01, a white pawn) NOTE: value 0xc6 itself is unused
-#define SCORE_DCHECK 0xC2 //Double check: extremely dangerous move (TODO: should even be ranking that before captures)
-#define SCORE_CHECK 0xC1 //Simple check: can be dangerous, don't look for those at low depth (3 or less) since it's slow
-#define SCORE_EVADE 0xC0 //Evasion: move that frees itself from an enemy attack detected by NMH (TODO)
-#define SCORE_KILLER_PRIMARY 0xBF //Killer move: primary killer move
-#define SCORE_KILLER_SECONDARY 0xBE //Killer move: secondary killer move
-#define SCORE_CASTLE 0x41 //Castling: higher score since it protects king; although it is easily surpassed by a move with good history
-#define SCORE_QUIET 0x40 //Quiet move: add history (TODO)
+#define SCORE_HASH				0xFFFFFFFF //Hash move
+#define SCORE_PROMO_Q			0x800000FF //Promotion to queen (only promo valued before captures)
+#define SCORE_PROMO_N			0x800000C6 //Promotion to knight
+#define SCORE_PROMO_R			0x800000C5 //Promotion to rook
+#define SCORE_PROMO_B			0x800000C4 //Promotion to bishop
+#define SCORE_CAPT				0x800000C7 //Capturing a piece (with MVV-LVA: add (VICTIM << 3) - AGGRESSOR => spans from 0xC7 to 0xFD, since victim is minimum 0x01, a white pawn) NOTE: value 0xc6 itself is unused
+#define SCORE_DCHECK			0x800000C3 //Double check: extremely dangerous move (TODO: should even be ranking that before captures)
+#define SCORE_CHECK				0x800000C2 //Simple check: can be dangerous, don't look for those at low depth (3 or less) since it's slow
+#define SCORE_KILLER_PRIMARY	0x800000C1 //Killer move: primary killer move
+#define SCORE_KILLER_SECONDARY	0x800000C0 //Killer move: secondary killer move
+#define SCORE_EVADE				0x60 //Evasion: move that frees itself from an enemy attack detected by NMH (TODO)
+#define SCORE_CASTLE			0x41 //Castling: higher score since it protects king; although it is easily surpassed by a move with good history
+#define SCORE_QUIET				0x40 //Quiet move: add history (TODO)
 
 //Generates a unique 16-bit identifier for any move
 #define MOVE_ID(m) ((m).src << 8 | (m).tgt + (m).promo)
@@ -61,20 +61,10 @@ typedef struct
 	uint8_t tgt; //Target square
 	uint8_t flags; //Move flags for doing castling, en passant, promotion, capture, etc.
 	uint8_t promo; //Promotion piece (0 = no promotion)
-	uint8_t score; //Score of the move (use in move ordering later)
+	uint32_t score; //Score of the move (use in move ordering later)
 }
 MOVE;
 
-/* typedef union //Maybe i don't care about this one...
-{
-	uint8_t u8[4];
-	int8_t i8[4];
-	uint16_t u16[2];
-	int16_t i16[2];
-	uint32_t u32;
-	int32_t i32;
-}
-Types32; */
 
 typedef struct
 {
@@ -102,8 +92,8 @@ extern uint8_t board_stm;
 extern uint8_t board_last_target;
 
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
-const uint8_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
-const uint8_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
+const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
+const uint32_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 
 
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
