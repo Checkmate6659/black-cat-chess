@@ -4,6 +4,8 @@
 #include "board.h"
 
 
-void order_moves(MLIST *mlist);
+extern uint16_t killers[MAX_DEPTH][2];
+
+void order_moves(MLIST *mlist, uint8_t ply);
 
 #endif

@@ -89,7 +89,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	pv_length[ply] = ply; //initialize current PV length
 
-	order_moves(&mlist); //sort the moves by score
+	order_moves(&mlist, ply); //sort the moves by score
 
 	while (mlist.count) //iterate through it backwards
 	{
@@ -124,8 +124,17 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 
 			alpha = eval;
-			if (alpha >= beta)
+			if (alpha >= beta) //beta cutoff
+			{
+				//Killer move: not a capture nor a promotion
+				if (curmove.flags < F_CAPT)
+				{
+					killers[ply][1] = killers[ply][0];
+					killers[ply][0] = MOVE_ID(curmove);
+				}
+
 				return beta;
+			}
 		}
 	}
 
@@ -151,7 +160,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	order_moves(&mlist); //sort the moves by score
+	order_moves(&mlist, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{

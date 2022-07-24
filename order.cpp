@@ -1,6 +1,9 @@
 #include "order.h"
 
-void order_moves(MLIST *mlist)
+
+uint16_t killers[MAX_DEPTH][2];
+
+void order_moves(MLIST *mlist, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
@@ -17,7 +20,20 @@ void order_moves(MLIST *mlist)
         }
         else if (curmove.flags < F_CAPT) //neither capture nor promo
         {
-            //TODO: add ordering for quiet moves (history etc)
+            //Killer move handling
+            if (MOVE_ID(curmove) == killers[ply][0]) //Primary killer move
+            {
+                curmove.score = SCORE_KILLER_PRIMARY;
+            }
+            else if (MOVE_ID(curmove) == killers[ply][1]) //Secondary killer move
+            {
+                curmove.score = SCORE_KILLER_SECONDARY;
+            }
+            else
+            {
+                //TODO: add history and other things
+                curmove.score = SCORE_QUIET;
+            }
         }
 
         //insert move into sorted list

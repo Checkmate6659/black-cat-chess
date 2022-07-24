@@ -6,8 +6,6 @@
 #include "order.h"
 #include "posix.h"
 
-#define MAX_DEPTH 128 //maximum depth: DO NOT SET ABOVE 256!
-
 #define DELTA 300 //delta pruning threshold
 
 

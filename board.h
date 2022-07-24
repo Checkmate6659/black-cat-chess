@@ -8,9 +8,9 @@
 #include "attacks.h"
 
 
-//#define NSQUARES 0x40
 #define OFFBOARD 0x88
-#define MAX_MOVE 218
+#define MAX_MOVE 218 //maximum pseudolegal moves in a legal position
+#define MAX_DEPTH 128 //maximum depth: DO NOT SET ABOVE 256!
 
 #define PTYPE 0b000111
 #define WHITE 0b001000
@@ -46,8 +46,13 @@
 #define SCORE_DCHECK 0xC2 //Double check: extremely dangerous move (TODO: should even be ranking that before captures)
 #define SCORE_CHECK 0xC1 //Simple check: can be dangerous, don't look for those at low depth (3 or less) since it's slow
 #define SCORE_EVADE 0xC0 //Evasion: move that frees itself from an enemy attack detected by NMH (TODO)
-#define SCORE_CASTLE 0xBF //Castling: high score since it protects king
-#define SCORE_QUIET 0x00 //Quiet move: add relative history and null move evasion in ordering
+#define SCORE_KILLER_PRIMARY 0xBF //Killer move: primary killer move
+#define SCORE_KILLER_SECONDARY 0xBE //Killer move: secondary killer move
+#define SCORE_CASTLE 0x41 //Castling: higher score since it protects king; although it is easily surpassed by a move with good history
+#define SCORE_QUIET 0x40 //Quiet move: add history (TODO)
+
+//Generates a unique 16-bit identifier for any move
+#define MOVE_ID(m) ((m).src << 8 | (m).tgt + (m).promo)
 
 
 typedef struct
