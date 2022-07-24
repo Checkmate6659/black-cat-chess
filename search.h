@@ -9,7 +9,6 @@
 #define MAX_DEPTH 128 //maximum depth: DO NOT SET ABOVE 256!
 
 #define DELTA 300 //delta pruning threshold
-#define QSEARCH_LMP 8 //qsearch late move pruning
 
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);

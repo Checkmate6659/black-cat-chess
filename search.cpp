@@ -14,16 +14,17 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 {
 	if (!(qcall_count & 0x0FFF)) //check every 4096 nodes
 	{
-		clock_t now = clock(); //if we're past the time limit, return immediately
-		if (now > search_end_time)
+		clock_t now = clock();
+		if (now > search_end_time) //if we're past the time limit, return immediately
 		{
 			//stop searching
 			return true;
 		}
-		else if (!(qcall_count & 0xFFFF)) //check for input available 16 times less, since it's very slow
+		else if (!(qcall_count & 0x3FFF)) //don't always check for input available, since it's very slow
 		{
 			if (kbhit())
 			{
+				//stop searching
 				search_end_time = 0; //force the search time to be 0, so it won't increase depth infinitely and crash
 				return true;
 			}
@@ -152,15 +153,9 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 	order_moves(&mlist); //sort the moves by score
 
-	uint8_t remaining_moves = QSEARCH_LMP;
 	while (mlist.count) //iterate through the move list backwards
 	{
-		if (remaining_moves == 0) //late move pruning: break and fail low
-			break;
-
 		mlist.count--;
-		remaining_moves--;
-
 		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
@@ -217,8 +212,8 @@ void search_root(uint32_t time_ms)
 		std::cout << " depth " << (int)depth;
 		std::cout << " nodes " << node_count;
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
-		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start);
-		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start);
+		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
+		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start + 1);
 
 		std::cout << " pv ";
 		int c = pv_length[0];
@@ -229,45 +224,7 @@ void search_root(uint32_t time_ms)
 		std::cout << std::endl;
 	}	
 
-	// search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
-	// uint8_t depth = 1;
-
-	// MOVE best_move;
-
-	// while (clock() < search_end_time) //while we still have time
-	// {
-	// 	best_move = pv_table[0][0]; //best move = previous iteration's first PV move (search gives irrelevant result if ran out of time)
-
-	// 	node_count = 0; //reset node and qsearch call count
-	// 	qcall_count = 0;
-
-	// 	clock_t start = clock();
-	// 	int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0);
-
-	// 	if (clock() < search_end_time) //only print out info if it's relevant
-	// 	{
-	// 		clock_t end = clock();
-
-	// 		std::cout << "info score cp " << eval;
-	// 		std::cout << " depth " << (int)depth;
-	// 		std::cout << " nodes " << node_count;
-	// 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
-	// 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start);
-	// 		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start);
-
-	// 		std::cout << " pv ";
-	// 		int c = pv_length[0];
-	// 		for (uint8_t i = 0; i < c; i++) {
-	// 			MOVE move = pv_table[0][i];
-	// 			print_move(move);
-	// 		}
-	// 		std::cout << std::endl;
-	// 	}
-
-	// 	depth++; //increase the depth
-	// }
-
-	//print out the best move
+	//print out the best move at the end of the search
 	std::cout << "bestmove ";
 	print_move(best_move);
 	std::cout << std::endl;

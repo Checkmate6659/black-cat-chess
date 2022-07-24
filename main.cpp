@@ -208,7 +208,7 @@ int main(int argc, char** argv)
 			}
 
 			clock_t end = clock();
-			double perft_time = (end - start) * 1000 / (double)CLOCKS_PER_SEC;
+			double perft_time = (end - start + 1) * 1000 / (double)CLOCKS_PER_SEC;
 
 			std::cout << "Nodes: " << nodes << std::endl;
 			std::cout << "Time: " << perft_time << std::endl;

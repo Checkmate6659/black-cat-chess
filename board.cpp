@@ -398,7 +398,7 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 			}
 
 			//generate capture
-			if (!(current_target & OFFBOARD) && ((board[current_target] ^ stm) & ENEMY) && (i || ptype > 2)) //ENEMY NEUTRALIZED (exception for pawns moving forward)
+			if (!(current_target & OFFBOARD) && ((board[current_target] ^ ENEMY) & ENEMY) == stm && (i || ptype > 2)) //ENEMY NEUTRALIZED (exception for pawns moving forward)
 			{
 				mlist->moves[mlist->count] = MOVE{ sq, current_target, F_CAPT, 0, SCORE_CAPT }; //thanks for the free stuff bro
 				mlist->count++;
@@ -507,7 +507,7 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm)
 			}
 
 			//generate capture
-			if (!(current_target & OFFBOARD) && ((board[current_target] ^ stm) & ENEMY) && (i || ptype > 2)) //ENEMY NEUTRALIZED (exception for pawns moving forward)
+			if (!(current_target & OFFBOARD) && ((board[current_target] ^ ENEMY) & ENEMY) == stm && (i || ptype > 2)) //ENEMY NEUTRALIZED (exception for pawns moving forward)
 			{
 				mlist->moves[mlist->count] = MOVE{ sq, current_target, F_CAPT, 0, SCORE_CAPT }; //thanks for the free stuff bro
 				mlist->count++;
