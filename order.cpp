@@ -2,21 +2,12 @@
 
 
 uint16_t killers[MAX_DEPTH][2];
-uint32_t history[64 * 64];
-
-
-static const uint8_t LogTable256[256] = 
-{
-#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
-    0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
-    LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
-    LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
-};
+uint32_t history[HIST_LENGTH];
 
 
 void clear_history()
 {
-    for (uint16_t i = 0; i < 64 * 64; i++) history[i] = 0;
+    for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] = 0;
 }
 
 void order_moves(MLIST *mlist, uint8_t ply)
@@ -50,8 +41,7 @@ void order_moves(MLIST *mlist, uint8_t ply)
             else
             {
                 curmove.score = SCORE_QUIET;
-                curmove.score += history[move_id];
-                // printf("%x\n", curmove.score);
+                curmove.score += history[MOVE_ID_HINDEX(curmove)];
             }
         }
 

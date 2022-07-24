@@ -53,6 +53,7 @@
 
 //Generates a unique 16-bit identifier for any move
 #define MOVE_ID(m) ((m).src << 8 | (m).tgt + (m).promo)
+#define MOVE_ID_HINDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index into the history table (piece type and target)
 
 
 typedef struct

@@ -129,7 +129,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (curmove.flags < F_CAPT)
 			{
 				//Add history bonus
-				history[move_id] += depth * depth; //add the square of the remaining depth (favor moves close to root)
+				history[MOVE_ID_HINDEX(curmove)] += depth * depth; //add the square of the remaining depth (favor moves close to root)
 			}
 
 			if (alpha >= beta) //beta cutoff
