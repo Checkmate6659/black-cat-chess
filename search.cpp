@@ -129,8 +129,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				//Killer move: not a capture nor a promotion
 				if (curmove.flags < F_CAPT)
 				{
+					uint16_t move_id = MOVE_ID(curmove);
+
+					//Handle killer moves
 					killers[ply][1] = killers[ply][0];
-					killers[ply][0] = MOVE_ID(curmove);
+					killers[ply][0] = move_id;
+
+					//Add history bonus
+					history[move_id] += depth * depth; //add the square of the remaining depth (favor moves close to root)
 				}
 
 				return beta;
@@ -198,6 +204,8 @@ void search_root(uint32_t time_ms)
 
 	for (int i = 0; i < 64; i++) //clear the PV length table
 		pv_length[i] = 0;
+
+	clear_history();
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 

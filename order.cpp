@@ -2,6 +2,33 @@
 
 
 uint16_t killers[MAX_DEPTH][2];
+uint32_t history[64 * 64];
+
+
+static const uint8_t LogTable256[256] = 
+{
+#define LT(n) n, n, n, n, n, n, n, n, n, n, n, n, n, n, n, n
+    0, 0, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+    LT(4), LT(5), LT(5), LT(6), LT(6), LT(6), LT(6),
+    LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7), LT(7)
+};
+
+
+void clear_history()
+{
+    for (uint16_t i = 0; i < 64 * 64; i++) history[i] = 0;
+}
+
+uint8_t uint32_to_score(uint32_t v) // http://graphics.stanford.edu/~seander/bithacks.html
+{
+    unsigned int t, tt;
+
+    if (tt = v >> 16)
+    {
+        return (t = tt >> 8) ? 24 + LogTable256[t] : 16 + LogTable256[tt];
+    }
+    return (t = v >> 8) ? 8 + LogTable256[t] : LogTable256[v];
+}
 
 void order_moves(MLIST *mlist, uint8_t ply)
 {
@@ -20,19 +47,23 @@ void order_moves(MLIST *mlist, uint8_t ply)
         }
         else if (curmove.flags < F_CAPT) //neither capture nor promo
         {
+            uint16_t move_id = MOVE_ID(curmove);
+
             //Killer move handling
-            if (MOVE_ID(curmove) == killers[ply][0]) //Primary killer move
+            if (move_id == killers[ply][0]) //Primary killer move
             {
                 curmove.score = SCORE_KILLER_PRIMARY;
             }
-            else if (MOVE_ID(curmove) == killers[ply][1]) //Secondary killer move
+            else if (move_id == killers[ply][1]) //Secondary killer move
             {
                 curmove.score = SCORE_KILLER_SECONDARY;
             }
             else
             {
-                //TODO: add history and other things
                 curmove.score = SCORE_QUIET;
+                // curmove.score += logUniformOutput(history[move_id]); //BSR should do the same, but it doesn't
+                curmove.score += uint32_to_score(history[move_id]);
+                // printf("%x\n", curmove.score);
             }
         }
 
