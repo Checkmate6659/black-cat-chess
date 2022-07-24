@@ -1,5 +1,4 @@
-#include "search.h"
-#include <stdio.h> //DEBUG
+#include "search.h" //search.h includes board.h, which also includes iostream
 
 
 clock_t search_end_time = 0; //TODO: iterative deepening!!!
@@ -84,21 +83,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
-	//The king capture should NOT be given a mate score!
-	//If i get pruning in the engine, i will have no guarantee the moves im playing are legal
-	//except if i do it in a kinda slow way...
-	//or spend a bunch of time optimizing movegen
-	// if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING) //the king is under attack! we must return immediately
-	// {
-	// 	return -MATE_SCORE - ply; //we win! and the less moves we used, the better!
-	// }
-	// else if (!mlist.count)
-	// {
-	// 	//This safety check might not be safe!
-	// 	if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) return MATE_SCORE + ply; //our king is under attack: we lose!
-	// 	return 0; //stalemate: no legal move, king not under attack
-	// }
-
 	//NOTE: the following statement will only be of any use when partial or full move legality will be implemented!
 	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
 
@@ -152,21 +136,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 {
-	MLIST mlist;
-	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
-
-	if (mlist.count && (board[mlist.moves[mlist.count - 1].tgt] & PTYPE) == KING) //the king is under attack! we must return immediately
-	{
-		return -MATE_SCORE; //we win!
-	}
-	else if (!mlist.count)
-	{
-		return evaluate() * ((stm & BLACK) ? -1 : 1); //evaluate
-	}
-
-	order_moves(&mlist); //sort the moves by score
-
-	//node_count++;
+	//if stand pat causes a beta cutoff, return before generating moves
 	int16_t stand_pat = evaluate() * ((stm & BLACK) ? -1 : 1); //stand pat score
 	if (stand_pat >= beta)
 		return beta;
@@ -174,6 +144,13 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 		alpha = stand_pat;
 	else if (stand_pat <= alpha - DELTA) //delta pruning
 		return alpha;
+
+
+	MLIST mlist;
+	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
+	if (mlist.count == 0) return alpha; //No captures available: return alpha
+
+	order_moves(&mlist); //sort the moves by score
 
 	uint8_t remaining_moves = QSEARCH_LMP;
 	while (mlist.count) //iterate through the move list backwards
@@ -213,46 +190,82 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 void search_root(uint32_t time_ms)
 {
-	for (int i = 0; i < 64; i++) //clear the PV length table to prevent PV table bug
+	MOVE best_move;
+
+	for (int i = 0; i < 64; i++) //clear the PV length table
 		pv_length[i] = 0;
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
-	uint8_t depth = 1;
 
-	MOVE best_move;
-
-	while (clock() < search_end_time) //while we still have time
+	//iterative deepening loop
+	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
 	{
-		best_move = pv_table[0][0]; //best move = previous iteration's first PV move (search gives irrelevant result if ran out of time)
-
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 
+		//do search and measure elapsed time
 		clock_t start = clock();
 		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0);
+		clock_t end = clock();
 
-		if (clock() < search_end_time) //only print out info if it's relevant
-		{
-			clock_t end = clock();
+		if (check_time()) break; //we do not have any more time!
 
-			std::cout << "info score cp " << eval;
-			std::cout << " depth " << (int)depth;
-			std::cout << " nodes " << node_count;
-			std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
-			std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start);
-			// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start);
 
-			std::cout << " pv ";
-			int c = pv_length[0];
-			for (uint8_t i = 0; i < c; i++) {
-				MOVE move = pv_table[0][i];
-				print_move(move);
-			}
-			std::cout << std::endl;
+		best_move = pv_table[0][0]; //save the best move
+
+		std::cout << "info score cp " << eval;
+		std::cout << " depth " << (int)depth;
+		std::cout << " nodes " << node_count;
+		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
+		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start);
+		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start);
+
+		std::cout << " pv ";
+		int c = pv_length[0];
+		for (uint8_t i = 0; i < c; i++) {
+			MOVE move = pv_table[0][i];
+			print_move(move);
 		}
+		std::cout << std::endl;
+	}	
 
-		depth++; //increase the depth
-	}
+	// search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
+	// uint8_t depth = 1;
+
+	// MOVE best_move;
+
+	// while (clock() < search_end_time) //while we still have time
+	// {
+	// 	best_move = pv_table[0][0]; //best move = previous iteration's first PV move (search gives irrelevant result if ran out of time)
+
+	// 	node_count = 0; //reset node and qsearch call count
+	// 	qcall_count = 0;
+
+	// 	clock_t start = clock();
+	// 	int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0);
+
+	// 	if (clock() < search_end_time) //only print out info if it's relevant
+	// 	{
+	// 		clock_t end = clock();
+
+	// 		std::cout << "info score cp " << eval;
+	// 		std::cout << " depth " << (int)depth;
+	// 		std::cout << " nodes " << node_count;
+	// 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
+	// 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start);
+	// 		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start);
+
+	// 		std::cout << " pv ";
+	// 		int c = pv_length[0];
+	// 		for (uint8_t i = 0; i < c; i++) {
+	// 			MOVE move = pv_table[0][i];
+	// 			print_move(move);
+	// 		}
+	// 		std::cout << std::endl;
+	// 	}
+
+	// 	depth++; //increase the depth
+	// }
 
 	//print out the best move
 	std::cout << "bestmove ";
