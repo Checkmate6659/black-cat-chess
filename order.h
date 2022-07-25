@@ -4,6 +4,7 @@
 #include "board.h"
 
 #define HIST_LENGTH 2048
+#define MAX_HISTORY 0xFFFFFFFF - MAX_DEPTH * MAX_DEPTH
 
 
 extern uint16_t killers[MAX_DEPTH][2];

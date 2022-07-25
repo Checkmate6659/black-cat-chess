@@ -130,9 +130,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			{
 				//Add history bonus
 				uint16_t hindex = HINDEX(curmove);
-
-				if (history[hindex] < 0xFFFFFFFF - MAX_DEPTH * MAX_DEPTH) //if it's not already too high
-					history[hindex] += depth * depth; //add the square of the remaining depth (favor moves close to root)
+				history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 			}
 
 			if (alpha >= beta) //beta cutoff
@@ -162,9 +160,8 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	int16_t stand_pat = evaluate() * ((stm & BLACK) ? -1 : 1); //stand pat score
 	if (stand_pat >= beta)
 		return beta;
-	else if (stand_pat >= alpha) //couldn't figure out why <algorithm> wasn't compiling properly
-		alpha = stand_pat;
-	else if (stand_pat <= alpha - DELTA) //delta pruning
+	else alpha = std::max(alpha, stand_pat);
+	if (stand_pat <= alpha - DELTA) //delta pruning
 		return alpha;
 
 
@@ -192,12 +189,9 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		unmake_move(stm, curmove, res);
 
-		if (eval > alpha)
-		{
-			alpha = eval;
-			if (alpha >= beta)
-				return beta;
-		}
+		alpha = std::max(alpha, eval);
+		if (alpha >= beta)
+			return beta;
 	}
 
 	return alpha;

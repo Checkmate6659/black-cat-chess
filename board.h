@@ -1,6 +1,7 @@
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
+#include <algorithm>
 #include <inttypes.h>
 #include <iostream>
 #include <cassert> //DEBUGGING ONLY!
