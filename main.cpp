@@ -61,6 +61,8 @@ int main()
 		}
 		else if(command == "position")
 		{
+			clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0)
+
 			input_stream >> command;
 			if (command == "startpos") //just load the starting position
 			{

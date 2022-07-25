@@ -34,6 +34,7 @@ extern uint64_t tt_entries; //TEMP VARIABLE: to debug TT
 
 uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
 void init_zobrist();
+void clear_tt();
 
 
 //Get a TT entry (if at or above required depth)

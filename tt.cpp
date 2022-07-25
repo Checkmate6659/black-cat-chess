@@ -22,3 +22,9 @@ void init_zobrist()
     for (uint16_t i = 128; i < 2048; i++)
         zobrist_table[i] = pseudo_rng();
 }
+
+void clear_tt()
+{
+    for (TT_INDEX i = 0; i < TT_SIZE; i++)
+        transpo_table[i].flag = 0; //flag of 0 means invalid entry: make entire table invalid
+}

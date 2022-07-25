@@ -79,6 +79,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (check_time())
 		return 0; //ran out of time: interrupt search immediately
 
+	hash ^= Z_TURN; //switch sides in the hash function *before* probing table
+
 	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
 	uint16_t hash_move = 0;
 
@@ -111,7 +113,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
 
 	pv_length[ply] = ply; //initialize current PV length
-	hash ^= Z_TURN; //switch sides in the hash function
 	order_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
 	while (mlist.count) //iterate through it backwards
@@ -244,7 +245,8 @@ void search_root(uint32_t time_ms)
 	for (int i = 0; i < 64; i++) //clear the PV length table
 		pv_length[i] = 0;
 
-	clear_history();
+	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
+	// clear_tt(); //clear TT
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
@@ -263,6 +265,24 @@ void search_root(uint32_t time_ms)
 
 		if (check_time()) break; //we do not have any more time!
 
+
+		if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
+		{
+			TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
+			if (root_entry.flag)
+			{
+				MLIST mlist;
+				generate_moves(&mlist, board_stm, board_last_target);
+
+				while (mlist.count--)
+					if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
+						pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
+				
+				pv_length[0] = 1; //we have 1 TT move in the PV
+			}
+
+			//TODO: complete the PV with TT moves
+		}
 
 		best_move = pv_table[0][0]; //save the best move
 
