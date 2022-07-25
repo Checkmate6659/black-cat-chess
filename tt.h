@@ -4,7 +4,8 @@
 #include "board.h"
 
 
-#define TT_SIZE (16777216 / sizeof(TT_ENTRY))
+//TT size (default is 1 << 24 = 16777216)
+#define TT_SIZE ((1 << 28) / sizeof(TT_ENTRY))
 
 #define HF_EXACT 1
 #define HF_BETA 2
@@ -29,6 +30,7 @@ extern TT_ENTRY transpo_table[];
 
 extern uint64_t prng_state; //PRNG state
 extern uint64_t zobrist_table[]; //Zobrist table (uses [piece][square] indexing, similar to history table)
+extern uint64_t tt_entries; //TEMP VARIABLE: to debug TT
 
 uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
 void init_zobrist();
@@ -47,7 +49,7 @@ inline TT_ENTRY get_entry(uint64_t key)
 }
 
 //Set a TT entry (if improving depth)
-inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, uint8_t eval, MOVE move)
+inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move)
 {
     TT_INDEX tt_index = key % TT_SIZE;
     TT_ENTRY entry = transpo_table[tt_index];
@@ -59,14 +61,15 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, uint8_t eval, M
     //less precise flag (exact < upperbound < lowerbound)
     if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
         return;
-    
+
+    if (!entry.flag) //new entry
+        tt_entries++;
+
     transpo_table[tt_index].key = key;
     transpo_table[tt_index].flag = flag;
     transpo_table[tt_index].depth = depth;
     transpo_table[tt_index].eval = eval;
     transpo_table[tt_index].move = MOVE_ID(move);
-
-    // printf("ENTRY SET\n");
 }
 
 //A function that helps determine the hash of a move (aka the change in board hash it generates)

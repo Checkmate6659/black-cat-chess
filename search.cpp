@@ -254,6 +254,7 @@ void search_root(uint32_t time_ms)
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 		tt_hits = 0; //reset TT hit count
+		tt_entries = 0; //reset TT ENTRY counter
 
 		//do search and measure elapsed time
 		clock_t start = clock();
@@ -271,6 +272,7 @@ void search_root(uint32_t time_ms)
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
 		std::cout << " tbhits " << tt_hits; //echoing TT entry hit count
+		std::cout << " ENTRIES " << tt_entries; //DEBUG: showing tt entries
 
 		std::cout << " pv ";
 		int c = pv_length[0];
