@@ -2,6 +2,7 @@
 
 
 clock_t search_end_time = 0; //TODO: iterative deepening!!!
+bool panic = false;
 
 uint64_t node_count = 0;
 uint64_t qcall_count = 0;
@@ -19,7 +20,7 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 		if (now > search_end_time) //if we're past the time limit, return immediately
 		{
 			//stop searching
-			return true;
+			panic = true;
 		}
 		else if (!(qcall_count & 0x3FFF)) //don't always check for input available, since it's very slow
 		{
@@ -27,12 +28,12 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 			{
 				//stop searching
 				search_end_time = 0; //force the search time to be 0, so it won't increase depth infinitely and crash
-				return true;
+				panic = true;
 			}
 		}
 	}
 
-	return false;
+	return panic;
 }
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
@@ -70,14 +71,14 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply)
 {
+	if (panic || check_time())
+		return 0; //ran out of time, or keystroke: interrupt search immediately
+
 	if (!depth)
 	{
 		qcall_count++;
 		return qsearch(stm, alpha, beta);
 	}
-
-	if (check_time())
-		return 0; //ran out of time: interrupt search immediately
 
 	hash ^= Z_TURN; //switch sides in the hash function *before* probing table
 
@@ -112,6 +113,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	//NOTE: the following statement will only be of any use when partial or full move legality will be implemented!
 	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
 
+	//needed for TT
+	int16_t old_alpha = alpha; //save an old alpha for handling exact TT scores
+	MOVE best_move; //we need to know the best move even if we have not beaten alpha
+	int16_t best_score = MATE_SCORE;
+
 	pv_length[ply] = ply; //initialize current PV length
 	order_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
@@ -140,6 +146,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		unmake_move(stm, curmove, res);
 
+		//needed for TT: get the best move even if alpha hasn't been beaten
+		//TODO: optimize this
+		if (eval > best_score)
+		{
+			best_score = eval;
+			best_move = curmove;
+		}
+
 		if (eval > alpha) //new best move!
 		{
 			alpha = eval;
@@ -162,6 +176,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 			if (alpha >= beta) //beta cutoff
 			{
+				if (panic) return 0; //should NOT set TT entries when out of time!
+
 				//Handle hash entry: upper bound (fail high)
 				set_entry(hash, HF_BETA, depth, beta, curmove);
 
@@ -176,20 +192,18 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 				return beta;
 			}
-			else
-			{
-				//Handle hash entry: exact score
-				//TODO: try storing an "old alpha", so that the entry only gets set once
-				set_entry(hash, HF_EXACT, depth, alpha, curmove);
-			}
 		}
 	}
 
 	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
 		return incheck ? MATE_SCORE + ply : 0; //king in check = checkmate (we lose)
 	
-	//Handle hash entry: lower bound (fail low)
-	set_entry(hash, HF_ALPHA, depth, alpha, pv_table[ply][ply]); //getting best move from PV table (WARNING: we have to have beaten alpha before!)
+	//Handle hash entry
+	if (panic) return 0; //should NOT set TT entries when out of time!
+	else if (alpha > old_alpha)
+		set_entry(hash, HF_EXACT, depth, alpha, best_move); //exact score
+	else
+		set_entry(hash, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
 
 	return alpha;
 }
@@ -246,17 +260,16 @@ void search_root(uint32_t time_ms)
 		pv_length[i] = 0;
 
 	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
-	// clear_tt(); //clear TT
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
 	{
+		panic = false; //reset panic flag
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 		tt_hits = 0; //reset TT hit count
-		tt_entries = 0; //reset TT ENTRY counter
 
 		//do search and measure elapsed time
 		clock_t start = clock();
@@ -292,7 +305,6 @@ void search_root(uint32_t time_ms)
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
 		std::cout << " tbhits " << tt_hits; //echoing TT entry hit count
-		std::cout << " ENTRIES " << tt_entries; //DEBUG: showing tt entries
 
 		std::cout << " pv ";
 		int c = pv_length[0];
@@ -301,9 +313,6 @@ void search_root(uint32_t time_ms)
 			print_move(move);
 		}
 		std::cout << std::endl;
-
-		// printf("KEY %lx FLAG %x DEPTH %d EVAL %d\n", transpo_table[0].key, transpo_table[0].flag, transpo_table[0].depth, transpo_table[0].eval);
-		// set_entry(0, HF_EXACT, 3, 123, best_move);
 	}	
 
 	//print out the best move at the end of the search

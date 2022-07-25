@@ -30,7 +30,6 @@ extern TT_ENTRY transpo_table[];
 
 extern uint64_t prng_state; //PRNG state
 extern uint64_t zobrist_table[]; //Zobrist table (uses [piece][square] indexing, similar to history table)
-extern uint64_t tt_entries; //TEMP VARIABLE: to debug TT
 
 uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
 void init_zobrist();
@@ -62,9 +61,6 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     //less precise flag (exact < upperbound < lowerbound)
     if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
         return;
-
-    if (!entry.flag) //new entry
-        tt_entries++;
 
     transpo_table[tt_index].key = key;
     transpo_table[tt_index].flag = flag;

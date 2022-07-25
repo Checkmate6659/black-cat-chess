@@ -5,7 +5,6 @@ TT_ENTRY transpo_table[TT_SIZE]; //Transposition table
 
 uint64_t prng_state = 0x12345678; //PRNG seed (not randomized, to give constant results and make debug easier)
 uint64_t zobrist_table[2048] = { 0 }; //NOTE: this Zobrist table is larger than it has to be (only 781 entries minimum)
-uint64_t tt_entries = 0;
 
 uint64_t pseudo_rng()
 {
