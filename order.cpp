@@ -41,7 +41,7 @@ void order_moves(MLIST *mlist, uint8_t ply)
             else
             {
                 curmove.score = SCORE_QUIET;
-                curmove.score += history[MOVE_ID_HINDEX(curmove)];
+                curmove.score += history[HINDEX(curmove)];
             }
         }
 
