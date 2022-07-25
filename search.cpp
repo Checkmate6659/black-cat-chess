@@ -67,7 +67,7 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 	return sum;
 }
 
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint8_t ply)
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply)
 {
 	if (!depth)
 	{
@@ -91,6 +91,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	order_moves(&mlist, ply); //sort the moves by score
 
+	hash ^= Z_TURN; //switch sides in the hash function
+
 	while (mlist.count) //iterate through it backwards
 	{
 		mlist.count--;
@@ -98,6 +100,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
+		uint64_t curmove_hash = move_hash(curmove);
+
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		//Failed optimization: if the move is illegal, then we should not search it!
@@ -108,8 +112,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		legal_move_count++;
+		curmove_hash ^= move_hash(curmove);
 
-		int16_t eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, ply + 1);
+		int16_t eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
 
 		unmake_move(stm, curmove, res);
 
@@ -139,6 +144,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				if (curmove.flags < F_CAPT)
 				{
 					//Handle killer moves
+					//TODO: don't overwrite killers if the move is *already* a killer
 					killers[ply][1] = killers[ply][0];
 					killers[ply][0] = move_id;
 				}
@@ -217,7 +223,7 @@ void search_root(uint32_t time_ms)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
-		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0);
+		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0, 0);
 		clock_t end = clock();
 
 		if (check_time()) break; //we do not have any more time!
