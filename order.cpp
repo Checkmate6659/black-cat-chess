@@ -10,7 +10,7 @@ void clear_history()
     for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] = 0;
 }
 
-void order_moves(MLIST *mlist, uint8_t ply)
+void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
@@ -19,8 +19,11 @@ void order_moves(MLIST *mlist, uint8_t ply)
         MOVE curmove = mlist->moves[i];
 
         //add score to move
+         //Hash move
+        if (MOVE_ID(curmove) == hash_move)
+            curmove.score = SCORE_HASH;
         //MVV-LVA captures
-        if (curmove.flags & F_CAPT)
+        else if (curmove.flags & F_CAPT)
         {
             curmove.score -= board[curmove.src] & PTYPE;
             curmove.score += (board[curmove.tgt] & PTYPE) << 3;

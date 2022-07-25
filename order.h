@@ -12,6 +12,6 @@ extern uint16_t killers[MAX_DEPTH][2];
 extern uint32_t history[HIST_LENGTH];
 
 void clear_history();
-void order_moves(MLIST *mlist, uint8_t ply);
+void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply);
 
 #endif

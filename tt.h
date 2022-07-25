@@ -4,14 +4,70 @@
 #include "board.h"
 
 
+#define TT_SIZE (16777216 / sizeof(TT_ENTRY))
+
+#define HF_EXACT 1
+#define HF_BETA 2
+#define HF_ALPHA 4
+
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
 #define Z_CRL(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
 
+
+typedef uint32_t TT_INDEX; //Change to uint64_t on large TT sizes (above ~28GB)
+
+typedef struct {
+    uint64_t key; //The position key
+    uint8_t flag; //A flag to identify the score as exact, alpha or beta
+    uint8_t depth; //The depth of the entry
+    int16_t eval; //The evaluation of the position
+    uint16_t move; //The best move of the previous search
+} TT_ENTRY;
+
+extern TT_ENTRY transpo_table[];
+
+
 extern uint64_t prng_state; //PRNG state
-extern uint64_t zobrist_table[2048]; //Zobrist table (uses [piece][square] indexing, similar to history table)
+extern uint64_t zobrist_table[]; //Zobrist table (uses [piece][square] indexing, similar to history table)
 
 uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
 void init_zobrist();
+
+
+//Get a TT entry (if at or above required depth)
+inline TT_ENTRY get_entry(uint64_t key)
+{
+    TT_INDEX tt_index = key % TT_SIZE;
+    TT_ENTRY entry = transpo_table[tt_index];
+
+    if (entry.key == key)
+        return entry; //Hit!
+
+    return TT_ENTRY { 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)
+}
+
+//Set a TT entry (if improving depth)
+inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, uint8_t eval, MOVE move)
+{
+    TT_INDEX tt_index = key % TT_SIZE;
+    TT_ENTRY entry = transpo_table[tt_index];
+
+    //insufficient depth
+    if (entry.depth > depth)
+        return;
+    
+    //less precise flag (exact < upperbound < lowerbound)
+    if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
+        return;
+    
+    transpo_table[tt_index].key = key;
+    transpo_table[tt_index].flag = flag;
+    transpo_table[tt_index].depth = depth;
+    transpo_table[tt_index].eval = eval;
+    transpo_table[tt_index].move = MOVE_ID(move);
+
+    // printf("ENTRY SET\n");
+}
 
 //A function that helps determine the hash of a move (aka the change in board hash it generates)
 //Xoring the results before and after a move gives you the move hash ^ Z_TURN

@@ -5,6 +5,7 @@ clock_t search_end_time = 0; //TODO: iterative deepening!!!
 
 uint64_t node_count = 0;
 uint64_t qcall_count = 0;
+uint64_t tt_hits = 0;
 
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
@@ -78,6 +79,28 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (check_time())
 		return 0; //ran out of time: interrupt search immediately
 
+	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
+	uint16_t hash_move = 0;
+
+	if (entry.flag) //TT hit
+	{
+		if (depth <= entry.depth) //sufficient depth
+		{
+			tt_hits++;
+
+			if (entry.flag == HF_EXACT) //exact hit: always return eval
+				return entry.eval;
+			if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+				return beta;
+			if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+				return alpha;
+			
+			tt_hits--;
+		}
+
+		hash_move = entry.move;
+	}
+
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 	uint8_t legal_move_count = 0;
 
@@ -88,10 +111,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
 
 	pv_length[ply] = ply; //initialize current PV length
-
-	order_moves(&mlist, ply); //sort the moves by score
-
 	hash ^= Z_TURN; //switch sides in the hash function
+	order_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
 	while (mlist.count) //iterate through it backwards
 	{
@@ -140,6 +161,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 			if (alpha >= beta) //beta cutoff
 			{
+				//Handle hash entry: upper bound (fail high)
+				set_entry(hash, HF_BETA, depth, beta, curmove);
+
 				//Killer move: not a capture nor a promotion
 				if (curmove.flags < F_CAPT)
 				{
@@ -151,11 +175,20 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 				return beta;
 			}
+			else
+			{
+				//Handle hash entry: exact score
+				//TODO: try storing an "old alpha", so that the entry only gets set once
+				set_entry(hash, HF_EXACT, depth, alpha, curmove);
+			}
 		}
 	}
 
 	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
 		return incheck ? MATE_SCORE + ply : 0; //king in check = checkmate (we lose)
+	
+	//Handle hash entry: lower bound (fail low)
+	set_entry(hash, HF_ALPHA, depth, alpha, pv_table[ply][ply]); //getting best move from PV table (WARNING: we have to have beaten alpha before!)
 
 	return alpha;
 }
@@ -175,7 +208,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	order_moves(&mlist, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	order_moves(&mlist, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
@@ -220,6 +253,7 @@ void search_root(uint32_t time_ms)
 	{
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
+		tt_hits = 0; //reset TT hit count
 
 		//do search and measure elapsed time
 		clock_t start = clock();
@@ -236,7 +270,7 @@ void search_root(uint32_t time_ms)
 		std::cout << " nodes " << node_count;
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
-		// std::cout << " nps " << qcall_count * CLOCKS_PER_SEC / (end - start + 1);
+		std::cout << " tbhits " << tt_hits; //echoing TT entry hit count
 
 		std::cout << " pv ";
 		int c = pv_length[0];
@@ -245,6 +279,9 @@ void search_root(uint32_t time_ms)
 			print_move(move);
 		}
 		std::cout << std::endl;
+
+		// printf("KEY %lx FLAG %x DEPTH %d EVAL %d\n", transpo_table[0].key, transpo_table[0].flag, transpo_table[0].depth, transpo_table[0].eval);
+		// set_entry(0, HF_EXACT, 3, 123, best_move);
 	}	
 
 	//print out the best move at the end of the search
