@@ -3,6 +3,7 @@
 
 #include "board.h"
 #include "eval.h"
+#include "tt.h"
 #include "order.h"
 #include "posix.h"
 

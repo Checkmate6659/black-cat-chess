@@ -129,7 +129,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (curmove.flags < F_CAPT)
 			{
 				//Add history bonus
-				uint16_t hindex = HINDEX(curmove);
+				uint16_t hindex = PSQ_INDEX(curmove);
 				history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 			}
 

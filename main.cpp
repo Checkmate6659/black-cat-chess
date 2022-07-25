@@ -4,14 +4,16 @@
 
 #include "board.h"
 #include "search.h"
+#include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "1.2a"
+#define __ENGINE_VERSION__ "1.3a"
 
 
-int main(int argc, char** argv)
+int main()
 {
 	std::cout << "Black Cat v" __ENGINE_VERSION__ " by Enigma\n";
+	init_zobrist(); //Initialize zobrist keys
 
 	
 	// load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");   					//STARTING POSITION

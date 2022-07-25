@@ -54,7 +54,7 @@
 
 //Generates a unique 16-bit identifier for any move
 #define MOVE_ID(m) ((m).src << 8 | (m).tgt + (m).promo)
-#define HINDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index into the history table (piece type and target); ONLY USE AFTER MOVE IS UNDONE!
+#define PSQ_INDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index from piece type and target (for history); ONLY USE AFTER MOVE IS UNDONE!
 
 
 typedef struct
@@ -76,9 +76,9 @@ typedef struct
 MLIST;
 
 typedef struct { //TODO: implement promotion flag!!! (to undo promotions)
-	uint8_t piece;
-	uint8_t plist_idx;
-	uint8_t prev_state = 0; //Promotion pawn before promotion (0 = no promotion, 1 = white pawn, 2 = black pawn)
+	uint8_t piece; //Captured piece
+	uint8_t plist_idx; //Index of captured piece in the piece list
+	uint8_t prev_state = 0; //Previous piece type (before making move); used for promotions and castling (conserve castling rights)
 }
 MOVE_RESULT;
 

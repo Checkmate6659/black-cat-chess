@@ -2,6 +2,7 @@
 #define __ORDER_H__
 
 #include "board.h"
+#include "tt.h"
 
 #define HIST_LENGTH 2048
 #define MAX_HISTORY 0xFFFFFFFF - MAX_DEPTH * MAX_DEPTH
