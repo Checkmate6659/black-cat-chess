@@ -23,7 +23,7 @@
 #define EMPTY 0
 #define WPAWN 1
 #define BPAWN 2
-#define KNIGHT 3 //maybe i should swap these (knight = 4, king = 3)?
+#define KNIGHT 3
 #define KING 4
 #define BISHOP 5
 #define ROOK 6

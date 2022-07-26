@@ -74,20 +74,19 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (panic || check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
 
-	if (!depth)
-	{
-		qcall_count++;
-		return qsearch(stm, alpha, beta);
-	}
-
-	hash ^= Z_TURN; //switch sides in the hash function *before* probing table
+	uint64_t dpp_hash = Z_DPP(last_target);
+	hash ^= Z_TURN ^ dpp_hash; //switch sides in the hash function and account for double pawn pushes *before* probing table
 
 	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
 	uint16_t hash_move = 0;
 
-	if (entry.flag) //TT hit
+	if (entry.flag && is_acceptable(entry.move)) //TT hit
 	{
-		if (depth <= entry.depth) //sufficient depth
+		//TODO: check for collisions! (is the move legal, or pseudo-legal)
+		//and if there are collisions, get around them somehow
+		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
+
+		if (depth <= entry.depth) //sufficient depth, and move is not a collision
 		{
 			tt_hits++;
 
@@ -102,6 +101,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		hash_move = entry.move;
+	}
+
+	if (!depth)
+	{
+		qcall_count++;
+		return qsearch(stm, alpha, beta);
 	}
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
@@ -124,17 +129,20 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	while (mlist.count) //iterate through it backwards
 	{
 		mlist.count--;
-
 		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
-		uint64_t curmove_hash = move_hash(curmove);
+		uint64_t curmove_hash = move_hash(curmove) ^ dpp_hash; //cancel out DPP hash, since en passant will be illegal next move
+
+		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) printf("COLLISION\n");
 
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		//Failed optimization: if the move is illegal, then we should not search it!
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
 		{
+			// if (!legal_move_count && hash_move) printf("ILLEGAL HASH\n");
+
 			unmake_move(stm, curmove, res); //just skip it
 			continue;
 		}
@@ -185,9 +193,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				if (curmove.flags < F_CAPT)
 				{
 					//Handle killer moves
-					//TODO: don't overwrite killers if the move is *already* a killer
-					killers[ply][1] = killers[ply][0];
-					killers[ply][0] = move_id;
+					if(move_id != killers[ply][0]) //don't overwrite killers if the move is *already* a killer
+					{
+						killers[ply][1] = killers[ply][0];
+						killers[ply][0] = move_id;
+					}
 				}
 
 				return beta;
@@ -304,7 +314,7 @@ void search_root(uint32_t time_ms)
 		std::cout << " nodes " << node_count;
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
-		std::cout << " tbhits " << tt_hits; //echoing TT entry hit count
+		// std::cout << " tthits " << tt_hits; //echoing TT entry hit count
 
 		std::cout << " pv ";
 		int c = pv_length[0];

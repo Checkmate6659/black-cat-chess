@@ -19,7 +19,7 @@ void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
         MOVE curmove = mlist->moves[i];
 
         //add score to move
-         //Hash move
+        //Hash move
         if (MOVE_ID(curmove) == hash_move)
             curmove.score = SCORE_HASH;
         //MVV-LVA captures

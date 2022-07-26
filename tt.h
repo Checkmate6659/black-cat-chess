@@ -13,6 +13,7 @@
 
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
 #define Z_CRL(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
+#define Z_DPP(lt) (lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128]) //black WPAWN board (unused); uses central 2 rows of the board
 
 
 typedef uint32_t TT_INDEX; //Change to uint64_t on large TT sizes (above ~28GB)
@@ -67,6 +68,34 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     transpo_table[tt_index].depth = depth;
     transpo_table[tt_index].eval = eval;
     transpo_table[tt_index].move = MOVE_ID(move);
+}
+
+//TODO: improve this function!
+//It's not completely collision-proof, and doesn't work with promotions and accepts illegal pawn moves and castling moves
+inline bool is_acceptable(uint16_t move_id)
+{
+    uint8_t src = move_id >> 8;
+    uint8_t diff = move_id - src;
+    uint8_t ptype = board[src] & PTYPE;
+
+    if (ptype == KING && std::abs((int8_t)diff) == 2) //castling move
+        return true; //sometimes (but rarely) allows illegal castling
+
+    uint8_t ray = RAYS[diff]; //a ray has to exist
+    uint8_t mask = RAYMSK[ptype]; //the piece on the source square has to be able to perform that move
+    if (!(ray ^ mask)) return false; //the piece cannot perform that move; the move is illegal
+
+    if (ptype < BISHOP) //leaper
+        return true;
+
+    //compute for sliding pieces
+    uint8_t offset = RAY_OFFSETS[diff];
+    if (!offset) return false; //the move is illegal (this should already have been filtered out!!!)
+    for (uint8_t cur_sq = move_id - offset; cur_sq != src; cur_sq -= offset)
+        if (board[cur_sq] || (cur_sq & OFFBOARD)) return false; //there is a piece in the way
+
+    //nothing is in the way: the move is acceptable
+    return true;
 }
 
 //A function that helps determine the hash of a move (aka the change in board hash it generates)
