@@ -86,17 +86,27 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//and if there are collisions, get around them somehow
 		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
 
-		if (depth <= entry.depth) //sufficient depth, and move is not a collision
+		if (depth <= entry.depth && ply) //sufficient depth, and move is not a collision
 		{
 			tt_hits++;
 
 			if (entry.flag == HF_EXACT) //exact hit: always return eval
 				return entry.eval;
-			if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
-				return beta;
-			if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
-				return alpha;
 			
+			//FAIL HARD
+			// if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+			// 	return beta;
+			// if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+			// 	return alpha;
+			
+			//FAIL SOFT
+			if (entry.flag == HF_BETA)
+				alpha = std::max(alpha, entry.eval);
+			else if (entry.flag == HF_ALPHA)
+				beta = std::min(beta, entry.eval);
+			if (alpha >= beta)
+				return entry.eval;
+
 			tt_hits--;
 		}
 
@@ -200,7 +210,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					}
 				}
 
-				return beta;
+				// return beta;
+				return eval;
 			}
 		}
 	}
@@ -215,7 +226,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	else
 		set_entry(hash, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
 
-	return alpha;
+	// return alpha;
+	return best_score;
 }
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
@@ -318,23 +330,23 @@ void search_root(uint32_t time_ms)
 		if (check_time()) break; //we do not have any more time!
 
 
-		if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
-		{
-			TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
-			if (root_entry.flag)
-			{
-				MLIST mlist;
-				generate_moves(&mlist, board_stm, board_last_target);
+		// if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
+		// {
+		// 	TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
+		// 	if (root_entry.flag)
+		// 	{
+		// 		MLIST mlist;
+		// 		generate_moves(&mlist, board_stm, board_last_target);
 
-				while (mlist.count--)
-					if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
-						pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
+		// 		while (mlist.count--)
+		// 			if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
+		// 				pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
 				
-				pv_length[0] = 1; //we have 1 TT move in the PV
-			}
+		// 		pv_length[0] = 1; //we have 1 TT move in the PV
+		// 	}
 
-			//TODO: complete the PV with TT moves
-		}
+		// 	//TODO: complete the PV with TT moves
+		// }
 
 		best_move = pv_table[0][0]; //save the best move
 
