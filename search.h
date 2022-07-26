@@ -1,14 +1,24 @@
 #ifndef __SEARCH_H__
 #define __SEARCH_H__
 
+#include <math.h>
 #include "board.h"
 #include "eval.h"
 #include "tt.h"
 #include "order.h"
 #include "posix.h"
 
-#define DELTA 300 //delta pruning threshold
+#define PV_NODE (beta - alpha > 1) //PV node
 
+#define DELTA 300 //delta pruning threshold
+#define LMR_MINDEPTH 3 //LMR minimum depth (included)
+#define LMR_THRESHOLD 3 //search first 3 legal moves with full depth
+#define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score
+
+
+extern uint8_t lmr_table[MAX_DEPTH][MAX_MOVE]; //LMR table
+
+void init_lmr();
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 
