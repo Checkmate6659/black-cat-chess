@@ -86,7 +86,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//and if there are collisions, get around them somehow
 		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
 
-		if (depth <= entry.depth && ply) //sufficient depth, and move is not a collision
+		if (/* ply && */ depth <= entry.depth) //sufficient depth, and node is not root
 		{
 			tt_hits++;
 
@@ -165,53 +165,52 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		unmake_move(stm, curmove, res);
 
 		//needed for TT: get the best move even if alpha hasn't been beaten
-		//TODO: optimize this
-		if (eval > best_score)
+		if (eval > best_score) //new best move!
 		{
 			best_score = eval;
 			best_move = curmove;
-		}
 
-		if (eval > alpha) //new best move!
-		{
-			alpha = eval;
-
-			pv_table[ply][ply] = curmove; //update principal variation (TODO: test doing after beta cutoff to try get extra speed)
-			uint8_t next_ply = ply + 1;
-			while(pv_length[ply + 1] > next_ply) {
-				pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-				next_ply++;
-			}
-			pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
-
-			uint16_t move_id = MOVE_ID(curmove);
-			if (curmove.flags < F_CAPT)
+			if (eval > alpha) //beat alpha
 			{
-				//Add history bonus
-				uint16_t hindex = PSQ_INDEX(curmove);
-				history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
-			}
+				alpha = eval;
 
-			if (alpha >= beta) //beta cutoff
-			{
-				if (panic) return 0; //should NOT set TT entries when out of time!
-
-				//Handle hash entry: upper bound (fail high)
-				set_entry(hash, HF_BETA, depth, beta, curmove);
-
-				//Killer move: not a capture nor a promotion
+				uint16_t move_id = MOVE_ID(curmove);
 				if (curmove.flags < F_CAPT)
 				{
-					//Handle killer moves
-					if(move_id != killers[ply][0]) //don't overwrite killers if the move is *already* a killer
-					{
-						killers[ply][1] = killers[ply][0];
-						killers[ply][0] = move_id;
-					}
+					//Add history bonus
+					uint16_t hindex = PSQ_INDEX(curmove);
+					history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 				}
 
-				// return beta;
-				return eval;
+				if (alpha >= beta) //beta cutoff
+				{
+					if (panic) return 0; //should NOT set TT entries when out of time!
+
+					//Handle hash entry: upper bound (fail high)
+					set_entry(hash, HF_BETA, depth, beta, curmove);
+
+					//Killer move: not a capture nor a promotion
+					if (curmove.flags < F_CAPT)
+					{
+						//Handle killer moves
+						if(move_id != killers[ply][0]) //don't overwrite killers if the move is *already* a killer
+						{
+							killers[ply][1] = killers[ply][0];
+							killers[ply][0] = move_id;
+						}
+					}
+
+					// return beta;
+					return eval;
+				}
+
+				pv_table[ply][ply] = curmove; //update principal variation
+				uint8_t next_ply = ply + 1;
+				while(pv_length[ply + 1] > next_ply) {
+					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+					next_ply++;
+				}
+				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 			}
 		}
 	}
@@ -330,23 +329,23 @@ void search_root(uint32_t time_ms)
 		if (check_time()) break; //we do not have any more time!
 
 
-		// if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
-		// {
-		// 	TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
-		// 	if (root_entry.flag)
-		// 	{
-		// 		MLIST mlist;
-		// 		generate_moves(&mlist, board_stm, board_last_target);
+		if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
+		{
+			TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
+			if (root_entry.flag)
+			{
+				MLIST mlist;
+				generate_moves(&mlist, board_stm, board_last_target);
 
-		// 		while (mlist.count--)
-		// 			if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
-		// 				pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
+				while (mlist.count--)
+					if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
+						pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
 				
-		// 		pv_length[0] = 1; //we have 1 TT move in the PV
-		// 	}
+				pv_length[0] = 1; //we have 1 TT move in the PV
+			}
 
-		// 	//TODO: complete the PV with TT moves
-		// }
+			//TODO: complete the PV with TT moves
+		}
 
 		best_move = pv_table[0][0]; //save the best move
 
