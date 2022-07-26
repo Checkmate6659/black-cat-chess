@@ -98,6 +98,33 @@ inline bool is_acceptable(uint16_t move_id)
     return true;
 }
 
+//same as prev function, but for captures in qsearch
+inline bool is_acceptable_capt(uint16_t move_id)
+{
+    uint8_t tgt = move_id;
+    if (!board[tgt]) //empty square
+        return false; //not a capture!
+
+    uint8_t src = move_id >> 8;
+    uint8_t diff = tgt - src;
+    uint8_t ptype = board[src] & PTYPE;
+    uint8_t ray = RAYS[diff]; //a ray has to exist
+    uint8_t mask = RAYMSK[ptype]; //the piece on the source square has to be able to perform that move
+    if (!(ray ^ mask)) return false; //the piece cannot perform that move; the move is illegal
+
+    if (ptype < BISHOP) //leaper
+        return true;
+
+    //compute for sliding pieces
+    uint8_t offset = RAY_OFFSETS[diff];
+    if (!offset) return false; //the move is illegal (this should already have been filtered out!!!)
+    for (uint8_t cur_sq = move_id - offset; cur_sq != src; cur_sq -= offset)
+        if (board[cur_sq] || (cur_sq & OFFBOARD)) return false; //there is a piece in the way
+
+    //nothing is in the way: the move is acceptable
+    return true;
+}
+
 //A function that helps determine the hash of a move (aka the change in board hash it generates)
 //Xoring the results before and after a move gives you the move hash ^ Z_TURN
 inline uint64_t move_hash(MOVE move)

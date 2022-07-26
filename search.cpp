@@ -106,7 +106,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (!depth)
 	{
 		qcall_count++;
-		return qsearch(stm, alpha, beta);
+		return qsearch(stm, alpha, beta/* , hash */);
 	}
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
@@ -129,7 +129,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	while (mlist.count) //iterate through it backwards
 	{
 		mlist.count--;
-		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
 		uint64_t curmove_hash = move_hash(curmove) ^ dpp_hash; //cancel out DPP hash, since en passant will be illegal next move
@@ -147,6 +146,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			continue;
 		}
 
+		node_count++;
 		legal_move_count++;
 		curmove_hash ^= move_hash(curmove);
 
@@ -218,8 +218,31 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	return alpha;
 }
 
-int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
+int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
 {
+	// hash ^= Z_TURN; //switch sides in the hash function and account for double pawn pushes *before* probing table
+
+	// TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
+	// uint16_t hash_move = 0;
+
+	// if (entry.flag && is_acceptable_capt(entry.move)) //TT hit
+	// {
+	// 	//TODO: try without is_acceptable
+
+	// 	tt_hits++;
+
+	// 	if (entry.flag == HF_EXACT) //exact hit: always return eval
+	// 		return entry.eval;
+	// 	if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+	// 		return beta;
+	// 	if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+	// 		return alpha;
+		
+	// 	tt_hits--;
+
+		// hash_move = entry.move;
+	// }
+
 	//if stand pat causes a beta cutoff, return before generating moves
 	int16_t stand_pat = evaluate() * ((stm & BLACK) ? -1 : 1); //stand pat score
 	if (stand_pat >= beta)
@@ -238,9 +261,10 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	while (mlist.count) //iterate through the move list backwards
 	{
 		mlist.count--;
-		node_count++;
 
 		MOVE curmove = mlist.moves[mlist.count];
+		// uint64_t curmove_hash = move_hash(curmove);
+
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
@@ -249,6 +273,11 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 			continue;
 		}
 
+		node_count++;
+
+		// curmove_hash ^= move_hash(curmove);
+
+		// int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha, hash ^ curmove_hash);
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 
 		unmake_move(stm, curmove, res);
