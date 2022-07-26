@@ -1,3 +1,5 @@
+//TODO: try use weights from http://hgm.nubati.net/book_format.html (low collision rate)
+
 #ifndef __TT_H__
 #define __TT_H__
 
@@ -14,6 +16,10 @@
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
 #define Z_CRL(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
 #define Z_DPP(lt) (lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128]) //black WPAWN board (unused); uses central 2 rows of the board
+
+#define REPLACEMENT_SCHEME(depth, entry_depth) ((depth) * REPLACEMENT_DEN >= (entry_depth) * REPLACEMENT_NUM) //only replace when depth * DEN > entry_depth * NUM
+#define REPLACEMENT_NUM 1 //replacement scheme numerator
+#define REPLACEMENT_DEN 1 //replacement scheme denominator
 
 
 typedef uint32_t TT_INDEX; //Change to uint64_t on large TT sizes (above ~28GB)
@@ -56,7 +62,8 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     TT_ENTRY entry = transpo_table[tt_index];
 
     //insufficient depth
-    if (entry.depth > depth)
+    // if (entry.depth > depth)
+    if (!REPLACEMENT_SCHEME(depth, entry.depth))
         return;
     
     //less precise flag (exact < upperbound < lowerbound)
