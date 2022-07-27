@@ -7,7 +7,7 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "1.4a LMR"
+#define __ENGINE_VERSION__ "1.4a"
 
 
 int main()

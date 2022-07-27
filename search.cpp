@@ -50,10 +50,18 @@ void init_lmr() //Initialize the late move reduction table
 			else if (move < LMR_THRESHOLD) lmr_table[ply][move] = 0; //no reduction for first few moves
 			else
 			{
-				lmr_table[ply][move] = 1; //constant reduction
+				//Conventional LMR
+				// lmr_table[ply][move] = 1; //constant reduction
 				// lmr_table[ply][move] = ply / 3; //linear reduction (senpai); TODO: experiment with different denoms
-				// lmr_table[ply][move] = (uint8_t)sqrt((double)ply - 1) + sqrt((double)move - 1); //square root reduction (fruit reloaded)
-				// lmr_table[ply][move] = (uint8_t)log((double)ply)*log((double)move); //log reduction (stockfish)
+				// lmr_table[ply][move] = (uint8_t)(sqrt((double)ply - 1) + sqrt((double)move - 1)); //square root reduction (fruit reloaded)
+				// lmr_table[ply][move] = (uint8_t)(log((double)ply)*log((double)move)); //log reduction (stockfish)
+
+				//Non-conventional LMR
+				// lmr_table[ply][move] = (uint8_t)(log(ply * move)); //logarithmic
+				// lmr_table[ply][move] = move / 3; //move-linear reduction (default 3)
+				// lmr_table[ply][move] = (uint8_t)(sqrt((ply - LMR_MINDEPTH) * ply - LMR_MINDEPTH) + (move - LMR_THRESHOLD) * (move - LMR_THRESHOLD)); //distance
+				// lmr_table[ply][move] = (uint8_t)(sqrt((double)ply - LMR_MINDEPTH) + sqrt((double)move - LMR_THRESHOLD)); //RELATIVE square root reduction (fruit reloaded)
+				lmr_table[ply][move] = (uint8_t)(log1p((double)ply - LMR_MINDEPTH)*log1p((double)move - LMR_THRESHOLD)); //RELATIVE log reduction (stockfish)
 			}
 		}
 }
@@ -181,10 +189,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//have to fetch LMR before legal move count is increased
 		uint8_t lmr = 0;
 
-		if(!PV_NODE && !incheck && curmove.score < LMR_MAXSCORE) //if LMR can be applied (non-PV node, not in check, low enough score)
+		if(/* !PV_NODE && */ !incheck && curmove.score < LMR_MAXSCORE) //if LMR can be applied (non-PV node, not in check, low enough score)
 		{
 			lmr = lmr_table[depth][legal_move_count]; //fetch LMR
-			if (depth > LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
+			if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
 				lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
 		}
 
@@ -196,6 +204,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		if (lmr) //LMR
 		{
+			//search with reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
 
 			if (eval > alpha) //beat alpha: re-search with no LMR
