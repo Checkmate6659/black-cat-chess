@@ -151,6 +151,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 	uint8_t legal_move_count = 0;
+	uint8_t lmr_move_count = 0;
 
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
@@ -189,15 +190,15 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//have to fetch LMR before legal move count is increased
 		uint8_t lmr = 0;
 
-		if(/* !PV_NODE && */ !incheck && curmove.score < LMR_MAXSCORE) //if LMR can be applied (non-PV node, not in check, low enough score)
-		{
-			lmr = lmr_table[depth][legal_move_count]; //fetch LMR
-			if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
-				lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
-		}
+		//LMR can always be applied if lmr_move_count != 0, which means no if statement is needed here
+		lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
+		if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
+			lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
+	
+		legal_move_count++;
+		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 
 		node_count++;
-		legal_move_count++;
 		curmove_hash ^= move_hash(curmove);
 
 		int16_t eval;
