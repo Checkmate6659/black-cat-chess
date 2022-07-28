@@ -124,18 +124,18 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				return entry.eval;
 			
 			//FAIL HARD
-			// if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
-			// 	return beta;
-			// if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
-			// 	return alpha;
+			if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+				return beta;
+			if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+				return alpha;
 			
 			//FAIL SOFT
-			if (entry.flag == HF_BETA)
-				alpha = std::max(alpha, entry.eval);
-			else if (entry.flag == HF_ALPHA)
-				beta = std::min(beta, entry.eval);
-			if (alpha >= beta)
-				return entry.eval;
+			// if (entry.flag == HF_BETA)
+			// 	alpha = std::max(alpha, entry.eval);
+			// else if (entry.flag == HF_ALPHA)
+			// 	beta = std::min(beta, entry.eval);
+			// if (alpha >= beta)
+			// 	return entry.eval;
 
 			tt_hits--;
 		}
@@ -252,8 +252,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 						}
 					}
 
-					// return beta;
-					return eval;
+					return beta; //FAIL HARD
+					// return eval;  //FAIL SOFT
 				}
 
 				pv_table[ply][ply] = curmove; //update principal variation
@@ -277,8 +277,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	else
 		set_entry(hash, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
 
-	// return alpha;
-	return best_score;
+	return alpha; //FAIL HARD
+	// return best_score; //FAIL SOFT
 }
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
