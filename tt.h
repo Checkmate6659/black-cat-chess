@@ -4,6 +4,7 @@
 #define __TT_H__
 
 #include "board.h"
+#include "eval.h" //mate scores (TODO)
 
 
 //TT size (default is 1 << 24 = 16777216)
@@ -49,7 +50,11 @@ inline TT_ENTRY get_entry(uint64_t key)
     TT_INDEX tt_index = key % TT_SIZE;
     TT_ENTRY entry = transpo_table[tt_index];
 
-    if (entry.key == key)
+    // assert(tt_index < TT_SIZE);
+    // if (entry.key == key && entry.flag)
+    //     if (entry.eval %5 != 0 && !IS_MATE(entry.eval)) printf("BAD EVAL %d\n", entry.eval);
+
+    if (entry.key == key && entry.flag) //A valid entry with the right key
         return entry; //Hit!
 
     return TT_ENTRY { 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)

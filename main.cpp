@@ -7,7 +7,7 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "1.4a"
+#define __ENGINE_VERSION__ "2.0-dev"
 
 
 int main()
@@ -15,6 +15,7 @@ int main()
 	std::cout << "Black Cat v" __ENGINE_VERSION__ " by Enigma\n";
 	init_zobrist(); //Initialize zobrist keys
 	init_lmr(); //Fill LMR table
+	clear_tt();
 
 	
 	// load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");   					//STARTING POSITION

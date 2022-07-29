@@ -110,13 +110,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
 	uint16_t hash_move = 0;
 
-	if (entry.flag && is_acceptable(entry.move)) //TT hit
+	if (is_acceptable(entry.move)) //TT hit
 	{
 		//TODO: check for collisions! (is the move legal, or pseudo-legal)
 		//and if there are collisions, get around them somehow
 		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
 
-		if (/* ply && */ depth <= entry.depth) //sufficient depth, and node is not root
+		if (ply && depth <= entry.depth) //sufficient depth, and node is not root
 		{
 			tt_hits++;
 
