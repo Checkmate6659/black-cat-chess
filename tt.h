@@ -74,7 +74,7 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     //insufficient depth
     // if (entry.depth > depth)
 
-    if (!REPLACEMENT_SCHEME(depth, entry.depth))
+    if (entry.flag && !REPLACEMENT_SCHEME(depth, entry.depth))
         return;
     
     //less precise flag (exact < upperbound < lowerbound)
@@ -93,7 +93,7 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
 inline bool is_acceptable(uint16_t move_id)
 {
     uint8_t src = move_id >> 8;
-    uint8_t diff = move_id - src;
+    uint8_t diff = 0x77 + move_id - src;
     uint8_t ptype = board[src] & PTYPE;
 
     if (ptype == KING && std::abs((int8_t)diff) == 2) //castling move

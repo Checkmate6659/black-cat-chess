@@ -216,7 +216,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		if (lmr) //LMR
 		{
-			//search with reduced depth
+			//search with reduced depth (TODO: replace bounds with -alpha-1, -alpha null window!!! when i will enable lmr back)
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
 
 			if (eval > alpha) //beat alpha: re-search with no LMR
