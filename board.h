@@ -53,7 +53,7 @@
 #define SCORE_QUIET				0x40 //Quiet move: add history (TODO)
 
 //Generates a unique 16-bit identifier for any move (be careful with parentheses tho; could be improved!)
-#define MOVE_ID(m) ((m).src << 8 | (m).tgt + (m).promo)
+#define MOVE_ID(m) (((m).src << 8 | (m).tgt) + (m).promo)
 #define PSQ_INDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index from piece type and target (for history); ONLY USE AFTER MOVE IS UNDONE!
 
 

@@ -9,6 +9,7 @@
 
 //TT size (default is 1 << 24 = 16777216)
 #define TT_SIZE ((1 << 28) / sizeof(TT_ENTRY))
+// #define TT_SIZE (1 << 24) //power of 2 TT size
 
 #define HF_EXACT 1
 #define HF_BETA 2
@@ -33,7 +34,7 @@ typedef struct {
     uint16_t move; //The best move of the previous search
 } TT_ENTRY;
 
-extern TT_ENTRY transpo_table[];
+extern TT_ENTRY transpo_table[TT_SIZE];
 
 
 extern uint64_t prng_state; //PRNG state
@@ -48,6 +49,7 @@ uint64_t board_hash(uint8_t stm, uint8_t last_target); //DEBUG: returns a hash o
 //Get a TT entry (if at or above required depth)
 inline TT_ENTRY get_entry(uint64_t key)
 {
+    // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % TT_SIZE;
     TT_ENTRY entry = transpo_table[tt_index];
 
@@ -65,6 +67,7 @@ inline TT_ENTRY get_entry(uint64_t key)
 //Set a TT entry (if improving depth)
 inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move)
 {
+    // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % TT_SIZE;
     TT_ENTRY entry = transpo_table[tt_index];
 
