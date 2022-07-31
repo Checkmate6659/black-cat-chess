@@ -137,7 +137,7 @@ int16_t evaluate()
     for (uint8_t i = 0; i < 32; i++) //count the number of queens (if there are no queens, it's an endgame; if 1 side only has a queen, its probably winning)
     {
         uint8_t sq = plist[i];
-        if ((board[sq] & PTYPE) == QUEEN) nqueens++;
+        if (sq != 0xFF && (board[sq] & PTYPE) == QUEEN) nqueens++;
     }
 
     //piece_values
