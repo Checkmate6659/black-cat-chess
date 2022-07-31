@@ -110,13 +110,13 @@ inline bool is_acceptable(uint16_t move_id)
     uint8_t offset = RAY_OFFSETS[diff];
     if (!offset) return false; //the move is illegal (this should already have been filtered out!!!)
     for (uint8_t cur_sq = move_id - offset; cur_sq != src; cur_sq -= offset)
-        if (board[cur_sq] || (cur_sq & OFFBOARD)) return false; //there is a piece in the way
+        if ((cur_sq & OFFBOARD) || board[cur_sq]) return false; //there is a piece in the way
 
     //nothing is in the way: the move is acceptable
     return true;
 }
 
-//same as prev function, but for captures in qsearch
+//same as prev function, but for captures in qsearch (FIX BUFFER OVERFLOWS!!!)
 inline bool is_acceptable_capt(uint16_t move_id)
 {
     uint8_t tgt = move_id;
