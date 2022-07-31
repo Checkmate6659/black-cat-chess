@@ -7,6 +7,7 @@ bool panic = false;
 uint64_t node_count = 0;
 uint64_t qcall_count = 0;
 uint64_t tt_hits = 0;
+uint64_t collisions = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
@@ -105,12 +106,19 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return 0; //ran out of time, or keystroke: interrupt search immediately
 
 	uint64_t dpp_hash = Z_DPP(last_target);
+	// if (last_target == (uint8_t)-2 && dpp_hash) printf("BAD DPP HASH LT%x\n", last_target);
+	// if (last_target == (uint8_t)-2) dpp_hash = 0; //this line of code loses 30elo, while it should be insignificant (something fucky is going on here)
 	hash ^= Z_TURN ^ dpp_hash; //switch sides in the hash function and account for double pawn pushes *before* probing table
 
-	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
-	uint16_t hash_move = 0;
+	//Using a board hash function gives a big search depth, but a garbage result (loses every time to prev version, still giving a ton of illegal PV moves)
+	//Also triggers COLLISION and ILLEGAL HASH printf-lines (when enabled) a whole bunch (depth 4+ on startpos; gives 1 collision at depths 2 and 3)
+	hash = board_hash(stm, last_target); //DEBUG: not give a shit to whatever there was before, just use the board_hash function
 
-	if (is_acceptable(entry.move)) //TT hit
+	uint16_t hash_move = 0;
+	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
+
+	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
+	if (/* entry.key == hash && */ entry.flag /* && is_acceptable(entry.move) */ /* && sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF */) //TT hit (DEBUG CONDITION: not in check)
 	{
 		//TODO: check for collisions! (is the move legal, or pseudo-legal)
 		//and if there are collisions, get around them somehow
@@ -120,6 +128,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			tt_hits++;
 
+			//TODO: replace lower ifs with else ifs to increase speed
 			if (entry.flag == HF_EXACT) //exact hit: always return eval
 				return entry.eval;
 			
@@ -139,6 +148,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 			tt_hits--;
 		}
+		else if (entry.flag) collisions++;//printf("DETECTED COLLISION\n");
 
 		hash_move = entry.move;
 	}
@@ -174,14 +184,15 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		MOVE curmove = mlist.moves[mlist.count];
 		uint64_t curmove_hash = move_hash(curmove) ^ dpp_hash; //cancel out DPP hash, since en passant will be illegal next move
 
-		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) printf("COLLISION\n");
+		if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;//printf("COLLISION\n");
 
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		//Failed optimization: if the move is illegal, then we should not search it!
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
 		{
-			// if (!legal_move_count && hash_move) printf("ILLEGAL HASH\n");
+			// WARNING: this warning might not be safe!
+			if (!legal_move_count && hash_move) collisions++;//printf("ILLEGAL HASH\n");
 
 			unmake_move(stm, curmove, res); //just skip it
 			continue;
@@ -381,23 +392,23 @@ void search_root(uint32_t time_ms)
 		if (check_time()) break; //we do not have any more time!
 
 
-		if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
-		{
-			TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
-			if (root_entry.flag)
-			{
-				MLIST mlist;
-				generate_moves(&mlist, board_stm, board_last_target);
+		// if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
+		// {
+		// 	TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
+		// 	if (root_entry.flag)
+		// 	{
+		// 		MLIST mlist;
+		// 		generate_moves(&mlist, board_stm, board_last_target);
 
-				while (mlist.count--)
-					if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
-						pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
+		// 		while (mlist.count--)
+		// 			if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
+		// 				pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
 				
-				pv_length[0] = 1; //we have 1 TT move in the PV
-			}
+		// 		pv_length[0] = 1; //we have 1 TT move in the PV
+		// 	}
 
-			//TODO: complete the PV with TT moves
-		}
+		// 	//TODO: complete the PV with TT moves
+		// }
 
 		best_move = pv_table[0][0]; //save the best move
 
@@ -406,7 +417,8 @@ void search_root(uint32_t time_ms)
 		std::cout << " nodes " << node_count;
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
-		// std::cout << " tthits " << tt_hits; //echoing TT entry hit count
+		std::cout << " tthits " << tt_hits; //echoing TT entry hit count
+		std::cout << " COLLISIONS " << collisions; //echoing number of collisions (TODO: fix TT bugs and get this to 0)
 
 		std::cout << " pv ";
 		int c = pv_length[0];
