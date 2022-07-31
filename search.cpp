@@ -151,7 +151,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		hash_move = entry.move;
 	}
-	else if (entry.flag) collisions++;//printf("DETECTED COLLISION\n");
+	// else if (entry.flag) collisions++;//printf("DETECTED COLLISION\n");
 
 	if (!depth)
 	{
