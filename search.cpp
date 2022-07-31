@@ -185,6 +185,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		uint64_t curmove_hash = move_hash(curmove) ^ dpp_hash; //cancel out DPP hash, since en passant will be illegal next move
 
 		if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;//printf("COLLISION\n");
+		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH)
+		// {
+		// 	printf("MOVEID: %x\nPOSITION:\n", hash_move);
+		// 	print_board_full(board);
+		// 	printf("HASH: %lx\n", hash);
+		// }
 
 		MOVE_RESULT res = make_move(stm, curmove);
 
@@ -369,7 +375,7 @@ void search_root(uint32_t time_ms)
 {
 	MOVE best_move;
 
-	for (int i = 0; i < 64; i++) //clear the PV length table
+	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
 
 	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
@@ -383,6 +389,7 @@ void search_root(uint32_t time_ms)
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 		tt_hits = 0; //reset TT hit count
+		collisions = 0; //reset COLLISION count (DEBUG)
 
 		//do search and measure elapsed time
 		clock_t start = clock();

@@ -10,7 +10,7 @@
 
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
-#define LMR_THRESHOLD 250 //search first 2 legal moves with full depth
+#define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
 #define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score
 
 

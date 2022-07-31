@@ -80,6 +80,9 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     //less precise flag (exact < upperbound < lowerbound)
     if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
         return;
+    
+    if (IS_MATE(eval)) //can't store mates!
+        return;
 
     transpo_table[tt_index].key = key;
     transpo_table[tt_index].flag = flag;
@@ -116,7 +119,7 @@ inline bool is_acceptable(uint16_t move_id)
     return true;
 }
 
-//same as prev function, but for captures in qsearch (FIX BUFFER OVERFLOWS!!!)
+//same as prev function, but for captures in qsearch (FIX BUFFER OVERFLOWS!!! as line 102 and line 113 when im gonna try use this)
 inline bool is_acceptable_capt(uint16_t move_id)
 {
     uint8_t tgt = move_id;
