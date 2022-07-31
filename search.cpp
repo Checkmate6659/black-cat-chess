@@ -118,13 +118,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
 
 	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
-	if (/* entry.key == hash && */ entry.flag && is_acceptable(entry.move) /* && sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF */) //TT hit (DEBUG CONDITION: not in check)
+	if (/* entry.key == hash && */ entry.flag /* && sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF */) //TT hit (DEBUG CONDITION: not in check)
 	{
 		//TODO: check for collisions! (is the move legal, or pseudo-legal)
 		//and if there are collisions, get around them somehow
 		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
 
-		if (ply && depth <= entry.depth) //sufficient depth, and node is not root
+		if (ply && depth <= entry.depth && is_acceptable(entry.move)) //sufficient depth, and node is not root
 		{
 			tt_hits++;
 
