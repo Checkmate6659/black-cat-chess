@@ -20,8 +20,8 @@
 #define Z_DPP(lt) ((lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128])) //black WPAWN board (unused); uses central 2 rows of the board
 
 #define REPLACEMENT_SCHEME(depth, entry_depth) ((uint16_t)(depth) * REPLACEMENT_DEN >= (uint16_t)(entry_depth) * REPLACEMENT_NUM) //only replace when depth * DEN > entry_depth * NUM
-#define REPLACEMENT_NUM 2 //replacement scheme numerator
-#define REPLACEMENT_DEN 3 //replacement scheme denominator
+#define REPLACEMENT_NUM 1 //replacement scheme numerator
+#define REPLACEMENT_DEN 1 //replacement scheme denominator
 
 
 typedef uint32_t TT_INDEX; //Change to uint64_t on large TT sizes (above ~28GB)

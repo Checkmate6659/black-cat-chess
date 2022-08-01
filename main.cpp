@@ -7,7 +7,7 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "2.0-dev BOARD_HASH"
+#define __ENGINE_VERSION__ "2.0-dev"
 
 
 int main()

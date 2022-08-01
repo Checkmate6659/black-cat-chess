@@ -105,6 +105,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (panic || check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
 
+	pv_length[ply] = ply; //initialize current PV length
+	
 	uint64_t dpp_hash = Z_DPP(last_target);
 	// if (last_target == (uint8_t)-2 && dpp_hash) printf("BAD DPP HASH LT%x\n", last_target);
 	// if (last_target == (uint8_t)-2) dpp_hash = 0; //this line of code loses 30elo, while it should be insignificant (something fucky is going on here)
@@ -174,7 +176,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	pv_length[ply] = ply; //initialize current PV length
 	order_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
 	while (mlist.count) //iterate through it backwards
