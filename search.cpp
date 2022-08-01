@@ -102,22 +102,21 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply)
 {
-	if (panic || check_time())
+	if (check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
 
 	pv_length[ply] = ply; //initialize current PV length
 	
-	uint64_t dpp_hash = Z_DPP(last_target);
-	// if (last_target == (uint8_t)-2 && dpp_hash) printf("BAD DPP HASH LT%x\n", last_target);
-	// if (last_target == (uint8_t)-2) dpp_hash = 0; //this line of code loses 30elo, while it should be insignificant (something fucky is going on here)
-	hash ^= Z_TURN ^ dpp_hash; //switch sides in the hash function and account for double pawn pushes *before* probing table
+	hash ^= Z_TURN; //switch sides
+	uint64_t key = hash ^ Z_DPP(last_target); //hash is just the pieces position and castling rights, we need to complement it with turn/dpp
+	if (last_target == (uint8_t)-2) key ^= Z_DPP(last_target);
 
 	//Using a board hash function gives a big search depth, but a garbage result (loses every time to prev version, still giving a ton of illegal PV moves)
 	//Also triggers COLLISION and ILLEGAL HASH printf-lines (when enabled) a whole bunch (depth 4+ on startpos; gives 1 collision at depths 2 and 3)
-	hash = board_hash(stm, last_target); //DEBUG: not give a shit to whatever there was before, just use the board_hash function
+	// key = board_hash(stm, last_target); //DEBUG: not give a shit to whatever there was before, just use the board_hash function
 
 	uint16_t hash_move = 0;
-	TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
+	TT_ENTRY entry = get_entry(key); //Try to get a TT entry
 
 	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
 	if (/* entry.key == hash && */ entry.flag /* && sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF */) //TT hit (DEBUG CONDITION: not in check)
@@ -183,7 +182,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		mlist.count--;
 
 		MOVE curmove = mlist.moves[mlist.count];
-		uint64_t curmove_hash = move_hash(curmove) ^ dpp_hash; //cancel out DPP hash, since en passant will be illegal next move
+		uint64_t curmove_hash = move_hash(stm, curmove);
 
 		if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;//printf("COLLISION\n");
 		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH)
@@ -217,7 +216,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 
 		node_count++;
-		curmove_hash ^= move_hash(curmove);
+		curmove_hash ^= move_hash(stm, curmove);
 
 		int16_t eval;
 
@@ -257,7 +256,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					if (panic) return 0; //should NOT set TT entries when out of time!
 
 					//Handle hash entry: upper bound (fail high)
-					set_entry(hash, HF_BETA, depth, beta, curmove);
+					set_entry(key, HF_BETA, depth, beta, curmove);
 
 					//Killer move: not a capture nor a promotion
 					if (curmove.flags < F_CAPT)
@@ -291,9 +290,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha)
-		set_entry(hash, HF_EXACT, depth, alpha, best_move); //exact score
+		set_entry(key, HF_EXACT, depth, alpha, best_move); //exact score
 	else
-		set_entry(hash, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
+		set_entry(key, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
 
 	return alpha; //FAIL HARD
 	// return best_score; //FAIL SOFT
@@ -394,7 +393,7 @@ void search_root(uint32_t time_ms)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
-		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, 0, 0);
+		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, board_hash(board_stm, board_last_target), 0); //board_hash temporary, will be replaced by 0 after optimization
 		clock_t end = clock();
 
 		if (check_time()) break; //we do not have any more time!

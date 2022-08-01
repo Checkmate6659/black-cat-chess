@@ -45,7 +45,7 @@ uint64_t board_hash(uint8_t stm, uint8_t last_target)
 
         uint8_t king_status = board[plist[(stm & 16) ^ 16]];
         if ((raw_piece & (PTYPE | MOVED)) == ROOK && !(king_status & MOVED)) //has 1 or 2 castling rights: rook hasn't moved, and its king also hasn't moved
-            hash ^= Z_CRL(i);
+            hash ^= Z_CASTLE(i);
     }
 
     return hash;

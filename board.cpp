@@ -207,10 +207,10 @@ void load_fen(std::string fen)
 			plist[0] = plist[board[sq | 8]];
 			plist[board[sq | 8]] = temp;
 
-			// printf("BLACK KING AT %x; TMP %x\n", sq, temp);
-
 			board[temp | 8] = board[plist[0] | 8]; //swap plist pointers
 			board[plist[0] | 8] = 0;
+
+			board[sq] |= MOVED; //mark king as moved
 		}
 		else if (board[sq] == 014) //White King Found!
 		{
@@ -222,14 +222,16 @@ void load_fen(std::string fen)
 
 			board[temp | 8] = board[plist[16] | 8]; //swap plist pointers
 			board[plist[16] | 8] = 16;
+
+			board[sq] |= MOVED; //mark king as moved
 		}
 	}
 
-	if (board[0x74]) board[0x74] |= MOVED; //White King
+	// if (board[0x74]) board[0x74] |= MOVED; //White King
 	if (board[0x77]) board[0x77] |= MOVED; //White Rooks
 	if (board[0x70]) board[0x70] |= MOVED;
 
-	if (board[0x04]) board[0x04] |= MOVED; //Black King
+	// if (board[0x04]) board[0x04] |= MOVED; //Black King
 	if (board[0x07]) board[0x07] |= MOVED; //Black Rooks
 	if (board[0x00]) board[0x00] |= MOVED;
 

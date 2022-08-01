@@ -16,7 +16,7 @@
 #define HF_ALPHA 4
 
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
-#define Z_CRL(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
+#define Z_CASTLE(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
 #define Z_DPP(lt) ((lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128])) //black WPAWN board (unused); uses central 2 rows of the board
 
 #define REPLACEMENT_SCHEME(depth, entry_depth) ((uint16_t)(depth) * REPLACEMENT_DEN >= (uint16_t)(entry_depth) * REPLACEMENT_NUM) //only replace when depth * DEN > entry_depth * NUM
@@ -149,43 +149,57 @@ inline bool is_acceptable_capt(uint16_t move_id)
 //A function that helps determine the hash of a move (aka the change in board hash it generates)
 //Xoring the results before and after a move gives you the move hash ^ Z_TURN
 //BUG: this function is probably not working properly, and it could very well be something sus with special moves (castling/en passant)
-inline uint64_t move_hash(MOVE move)
+inline uint64_t move_hash(uint8_t stm, MOVE move)
 {
+    uint64_t hash = 0;
+
     uint8_t source_piece = board[move.src] & 15; //saves piece's color (1 bit) and type (3 bits)
     uint8_t target_piece = board[move.tgt] & 15; //same here, but with the target
-    uint16_t special_move_index_1 = 0; //actually it *might* be with the special moves?
-    uint16_t special_move_index_2 = 0;
-    uint64_t crl = 0;
+    
+    hash ^= zobrist_table[(source_piece << 7) | move.src]; //source piece
+    hash ^= zobrist_table[(target_piece << 7) | move.tgt]; //target piece
 
-    //No risk of overflow here! So we *can* use these offsetted squares without any risk
-    if (move.flags & F_EP)
+    //Other squares to save for special moves: target + 16, target - 16, target + 1, target - 1, target - 2
+    if (move.flags & F_EP) //move.tgt is in an "en passant range": 4 middle rows
     {
-        uint8_t special_square_1 = move.tgt - 16; //piece/pawn above (im doing both squares because i dont need to do fancy stuff for seeing whose turn it is)
-        uint8_t special_square_2 = move.tgt + 16; //piece/pawn below
+        //target +- 16 definitely on the board: we can save those
+        uint8_t current_piece = board[move.tgt + 16] & 15;
+        hash ^= zobrist_table[current_piece << 7 | (move.tgt + 16)];
 
-        special_move_index_1 = (board[special_square_1] & 15) << 7 | special_square_1;
-        special_move_index_2 = (board[special_square_2] & 15) << 7 | special_square_2;
-    }
-    else if (move.flags & F_CASTLE)
-    {
-        uint8_t special_square_1 = move.tgt - 1; //queenside castling: is there a rook? (THIS LINE IS SUS AS HELL: not corresponding to rook on a1 when target is c1)
-        uint8_t special_square_2 = move.tgt + 1; //kingside castling
-
-        special_move_index_1 = (board[special_square_1] & 15) << 7 | special_square_1;
-        special_move_index_2 = (board[special_square_2] & 15) << 7 | special_square_2;
+        current_piece = board[move.tgt - 16] & 15;
+        hash ^= zobrist_table[current_piece << 7 | (move.tgt - 16)];
     }
 
-    //also do hashing for loss of castle rights (king/rook first move), also includes castling
-    //NOTE: after the piece moves, the piece will have the MOVED bit set, so the conditions would always fail
-    if ((board[move.src] & (PTYPE | MOVED)) == KING) crl = Z_CRL(move.src); //moving virgin king: loss of both castle rights (WARNING!!!)
-    else if ((board[move.src] & (PTYPE | MOVED)) == ROOK) crl = Z_CRL(move.src); //moving virgin rook: loss of one castle right
+    if (move.flags & F_CASTLE) //castling move
+    {
+        //target +- 1 and target - 2 definitely on the board: we can save those
+        uint8_t current_piece = board[move.tgt + 1] & 15;
+        hash ^= zobrist_table[current_piece << 7 | (move.tgt + 1)]; //kingside rook on h-file, queenside rook after castling on d-file
 
-    return
-        zobrist_table[source_piece << 7 | move.src] ^ //Piece move
-        zobrist_table[target_piece << 7 | move.tgt] ^
-        zobrist_table[special_move_index_1] ^ //Special moves (castling/en passant)
-        zobrist_table[special_move_index_2] ^
-        crl; //Loss of a castling right
+        current_piece = board[move.tgt - 1] & 15;
+        hash ^= zobrist_table[current_piece << 7 | (move.tgt - 1)]; //kingside rook after castling on f-file
+
+        current_piece = board[move.tgt - 2] & 15;
+        hash ^= zobrist_table[current_piece << 7 | (move.tgt - 2)]; //queenside rook on a-file
+    }
+
+    //This "cheat line" works; but it's slow af! (and we're here to make the thing fast, so...)
+    // hash = 0;
+    // for (uint8_t i = 0; i < 120; i++) if (!(i & OFFBOARD)) hash ^= zobrist_table[(board[i] & 15) << 7 | i]; //DEBUG: hash all pieces
+
+    //calculate castling rights
+    uint8_t king_square = plist[(stm & 16) ^ 16];
+    uint8_t king_status = board[king_square];
+
+    if (!(king_status & MOVED)) //king hasn't moved: castling rights may exist
+    {
+        if (!(board[king_square + 3] & MOVED)) //kingside rook hasn't moved: kingside castle right
+            hash ^= Z_CASTLE(king_square + 3);
+        if (!(board[king_square - 4] & MOVED)) //queenside rook hasn't moved: queenside castle right
+            hash ^= Z_CASTLE(king_square - 4);
+    }
+
+    return hash;
 }
 
 #endif
