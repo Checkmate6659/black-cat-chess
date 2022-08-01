@@ -28,7 +28,7 @@ void clear_tt()
         transpo_table[i].flag = 0; //flag of 0 means invalid entry: make entire table invalid
 }
 
-//No recursion: this function is guaranteed to produce the same result every single time (unless the board is different)
+//Board hashing to initialize repetition table from given move list
 uint64_t board_hash(uint8_t stm, uint8_t last_target)
 {
     uint64_t hash = 0;

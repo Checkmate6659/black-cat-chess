@@ -7,7 +7,7 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "2.0-dev"
+#define __ENGINE_VERSION__ "2.0-dev rpt fifty"
 
 
 int main()
@@ -15,8 +15,10 @@ int main()
 	std::cout << "Black Cat v" __ENGINE_VERSION__ " by Enigma\n";
 	init_zobrist(); //Initialize zobrist keys
 	init_lmr(); //Fill LMR table
-	clear_tt();
-
+	clear_tt(); //clear the transposition table
+	for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
+		repetition_table[i] = -100;
+	
 	
 	// load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");   					//STARTING POSITION
 	// load_fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w KQkq e6 0 1");  								//POSITION 3
@@ -64,6 +66,8 @@ int main()
 		else if(command == "position")
 		{
 			clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0)
+			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
+				repetition_table[i] = -100; //invalid ply: game must have been adjudicated previously
 
 			input_stream >> command;
 			if (command == "startpos") //just load the starting position
@@ -140,11 +144,21 @@ int main()
 						}
 					}
 
+					if ((input_move.flags & F_CAPT) || (board[input_move.src] & PTYPE) < 3) //zeroing move: no repetitions possible
+						for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the entirety of the repetition table (not the most efficient, but this is UCI anyway)
+							repetition_table[i] = -100;
+
+					RPT_INDEX rpt_index = board_hash(board_stm, board_last_target) & RPT_MASK;
+					repetition_table[rpt_index] = -half_move_clock;
+
 					make_move(board_stm, input_move); //make the move
 					board_stm ^= ENEMY; //switch sides
 					board_last_target = (input_move.flags & F_DPP) ? tgt : -2; //set the last target square if we made a double pawn push
 					input_stream >> command; //try reading next move
 				}
+
+				RPT_INDEX rpt_index = board_hash(board_stm, board_last_target) & RPT_MASK;
+				repetition_table[rpt_index] = -100;
 			}
 		}
 		else if (command == "go")

@@ -13,8 +13,9 @@
 #define REPETITION 0 //TODO
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-//Aspiration window value (in centipawns)
-#define ASP_WINDOW 8000 //very high value: disable aspiration windows
+#define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
+#define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
+#define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
@@ -22,7 +23,10 @@
 #define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score
 
 
+typedef uint32_t RPT_INDEX; //Repetition table index
+
 extern uint8_t lmr_table[MAX_DEPTH][MAX_MOVE]; //LMR table
+extern int8_t repetition_table[RPT_SIZE]; //Repetition table
 
 void init_lmr();
 

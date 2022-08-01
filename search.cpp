@@ -14,6 +14,8 @@ uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
 
+int8_t repetition_table[RPT_SIZE];
+
 
 inline bool check_time() //Returns true if there is no time left or if a keystroke has been detected
 {
@@ -160,6 +162,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return qsearch(stm, alpha, beta);
 	}
 
+	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
+
+	if (repetition_table[rpt_index] == last_zeroing_ply && ply) //twofold repetition (checking of last_zeroing_ply to diminish risk of collision) and not at root
+		return REPETITION; //adjudicate
+
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
@@ -176,6 +183,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	int16_t best_score = MATE_SCORE;
 
 	order_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
+
+	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
 	while (mlist.count) //iterate through it backwards
 	{
@@ -265,6 +274,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 						}
 					}
 
+					repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry)
 					return beta; //FAIL HARD
 					// return eval;  //FAIL SOFT
 				}
@@ -279,6 +289,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			}
 		}
 	}
+
+	repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry)
 
 	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
 		return incheck ? MATE_SCORE + ply : STALEMATE; //king in check = checkmate (we lose); otherwise stalemate
@@ -351,8 +363,8 @@ void search_root(uint32_t time_ms)
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
 	int16_t alpha = MATE_SCORE;
-	int16_t beta = MATE_SCORE;
-
+	int16_t beta = -MATE_SCORE;
+	
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
 	{
@@ -364,25 +376,12 @@ void search_root(uint32_t time_ms)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
-		int16_t eval = search(board_stm, depth, board_last_target, alpha, beta, 0, 0, -half_move_clock);
-
-		if (!panic && (eval <= alpha || eval >= beta)) //Got outside aspiration bounds: re-search is necessary
-		{
-			//Reset window to full
-			alpha = MATE_SCORE;
-			beta = -MATE_SCORE;
-
-			//Re-search with full window
-			eval = search(board_stm, depth, board_last_target, alpha, beta, 0, 0, -half_move_clock);
-		}
-
+		int16_t eval = search(board_stm, depth, board_last_target, alpha, beta,
+			board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+			0, -half_move_clock);
 		clock_t end = clock();
 
 		if (panic) break; //we do not have any more time!
-
-		//Set aspiration window
-		alpha = eval - ASP_WINDOW;
-		beta = eval + ASP_WINDOW;
 
 		best_move = pv_table[0][0]; //save the best move
 
