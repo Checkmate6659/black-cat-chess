@@ -45,6 +45,7 @@ uint8_t plist[] = {
 
 uint8_t board_stm = WHITE;
 uint8_t board_last_target = -2;
+int8_t half_move_clock = 0;
 
 
 //and here comes 41 bytes (could be way less) of some crazy compression & branchless-ification (could be useful for some kind of variant program as well)
@@ -134,6 +135,8 @@ void load_fen(std::string fen)
 	// std::cout << enpassant << std::endl;
 	// std::cout << halfmove << std::endl;
 	// std::cout << fullmove << std::endl;
+
+	half_move_clock = halfmove;
 
 	uint8_t sq = 0;
 	uint8_t white_plist_idx = 0, black_plist_idx = 0;

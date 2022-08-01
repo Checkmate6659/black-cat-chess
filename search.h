@@ -9,9 +9,12 @@
 #include "posix.h"
 
 //Draw scores for different endings to implement different contempt factors
-#define STALEMATE 0 //Stalemate: side to move has no legal moves: positive contempt factor = negative value
+#define STALEMATE 0 //Stalemate: side to move has no legal moves
 #define REPETITION 0 //TODO
-#define FIFTY_MOVE 0 //TODO
+#define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
+
+//Aspiration window value (in centipawns)
+#define ASP_WINDOW 8000 //very high value: disable aspiration windows
 
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
@@ -25,8 +28,8 @@ void init_lmr();
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply);
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply, int8_t last_zeroing_ply);
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta);
-void search_root(uint32_t time_ms); //Assuming the position is legal (enemy king not under attack)
+void search_root(uint32_t time_ms);
 
 #endif

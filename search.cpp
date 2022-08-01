@@ -100,13 +100,15 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 	return sum;
 }
 
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply)
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
 
 	pv_length[ply] = ply; //initialize current PV length
-	
+
+	if (ply - last_zeroing_ply >= 100) return FIFTY_MOVE; //if we've gone over 100 ply without zeroing, then the game is a draw
+
 	hash ^= Z_TURN; //switch sides
 	uint64_t key = hash ^ Z_DPP(last_target); //hash is just the pieces position and castling rights, we need to complement it with turn/dpp
 	if (last_target == (uint8_t)-2) key ^= Z_DPP(last_target);
@@ -195,6 +197,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			continue;
 		}
 
+		int8_t updated_last_zeroing_ply = last_zeroing_ply;
+		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
+
 		//have to fetch LMR before legal move count is increased
 		uint8_t lmr = 0;
 
@@ -214,13 +219,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (lmr) //LMR implementation (replace by legal_move_count for PVS)
 		{
 			//search with null window and reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, ~alpha, -alpha, hash ^ curmove_hash, ply + 1);
+			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, ~alpha, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
-				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
+				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
 		}
 		else
-			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
+			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
 
 		unmake_move(stm, curmove, res);
 
@@ -345,6 +350,9 @@ void search_root(uint32_t time_ms)
 
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
+	int16_t alpha = MATE_SCORE;
+	int16_t beta = MATE_SCORE;
+
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
 	{
@@ -356,29 +364,25 @@ void search_root(uint32_t time_ms)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
-		int16_t eval = search(board_stm, depth, board_last_target, MATE_SCORE, -MATE_SCORE, board_hash(board_stm, board_last_target), 0); //board_hash temporary, will be replaced by 0 after optimization
+		int16_t eval = search(board_stm, depth, board_last_target, alpha, beta, 0, 0, -half_move_clock);
+
+		if (!panic && (eval <= alpha || eval >= beta)) //Got outside aspiration bounds: re-search is necessary
+		{
+			//Reset window to full
+			alpha = MATE_SCORE;
+			beta = -MATE_SCORE;
+
+			//Re-search with full window
+			eval = search(board_stm, depth, board_last_target, alpha, beta, 0, 0, -half_move_clock);
+		}
+
 		clock_t end = clock();
 
-		if (check_time()) break; //we do not have any more time!
+		if (panic) break; //we do not have any more time!
 
-
-		// if (pv_length[0] == 0) //PV length = 0: the root node is in the TT
-		// {
-		// 	TT_ENTRY root_entry = get_entry(Z_TURN); //get root entry
-		// 	if (root_entry.flag)
-		// 	{
-		// 		MLIST mlist;
-		// 		generate_moves(&mlist, board_stm, board_last_target);
-
-		// 		while (mlist.count--)
-		// 			if (MOVE_ID(mlist.moves[mlist.count]) == root_entry.move)
-		// 				pv_table[0][0] = mlist.moves[mlist.count]; //get best move from TT
-				
-		// 		pv_length[0] = 1; //we have 1 TT move in the PV
-		// 	}
-
-		// 	//TODO: complete the PV with TT moves
-		// }
+		//Set aspiration window
+		alpha = eval - ASP_WINDOW;
+		beta = eval + ASP_WINDOW;
 
 		best_move = pv_table[0][0]; //save the best move
 

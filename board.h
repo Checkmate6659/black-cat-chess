@@ -10,8 +10,8 @@
 
 
 #define OFFBOARD 0x88
-#define MAX_MOVE 218 //maximum pseudolegal moves in a legal position
-#define MAX_DEPTH 128 //maximum depth: DO NOT SET ABOVE 256!
+#define MAX_MOVE 218 //maximum pseudolegal number of moves in a legal chess position
+#define MAX_DEPTH 127 //maximum depth: DO NOT SET ABOVE 127! Setting it above 127 will break repetition/50-move rule; setting it above 256 will overflow and break stuff
 
 #define PTYPE 0b000111
 #define WHITE 0b001000
@@ -92,6 +92,7 @@ extern uint8_t board[128];
 extern uint8_t plist[32];
 extern uint8_t board_stm;
 extern uint8_t board_last_target;
+extern int8_t half_move_clock;
 
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
