@@ -7,7 +7,7 @@ bool panic = false;
 uint64_t node_count = 0;
 uint64_t qcall_count = 0;
 uint64_t tt_hits = 0;
-uint64_t collisions = 0;
+// uint64_t collisions = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
@@ -119,7 +119,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	TT_ENTRY entry = get_entry(key); //Try to get a TT entry
 
 	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
-	if (/* entry.key == hash && */ entry.flag /* && sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF */) //TT hit (DEBUG CONDITION: not in check)
+	if (entry.flag) //TT hit
 	{
 		//TODO: check for collisions! (is the move legal, or pseudo-legal)
 		//and if there are collisions, get around them somehow
@@ -129,14 +129,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			tt_hits++;
 
-			//TODO: replace lower ifs with else ifs to increase speed
 			if (entry.flag == HF_EXACT) //exact hit: always return eval
 				return entry.eval;
 			
 			//FAIL HARD
-			if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+			else if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
 				return beta;
-			if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+			else if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
 				return alpha;
 			
 			//FAIL SOFT
@@ -152,12 +151,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		hash_move = entry.move;
 	}
-	// else if (entry.flag) collisions++;//printf("DETECTED COLLISION\n");
 
-	if (!depth)
+	if (!depth || ply == MAX_DEPTH)
 	{
 		qcall_count++;
-		return qsearch(stm, alpha, beta/* , hash */);
+		return qsearch(stm, alpha, beta);
 	}
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
@@ -184,21 +182,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		MOVE curmove = mlist.moves[mlist.count];
 		uint64_t curmove_hash = move_hash(stm, curmove);
 
-		if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;//printf("COLLISION\n");
-		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH)
-		// {
-		// 	printf("MOVEID: %x\nPOSITION:\n", hash_move);
-		// 	print_board_full(board);
-		// 	printf("HASH: %lx\n", hash);
-		// }
+		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;
 
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		//Failed optimization: if the move is illegal, then we should not search it!
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
 		{
-			// WARNING: this warning might not be safe!
-			if (!legal_move_count && hash_move) collisions++;//printf("ILLEGAL HASH\n");
+			// if (!legal_move_count && hash_move) collisions++;
 
 			unmake_move(stm, curmove, res); //just skip it
 			continue;
@@ -220,12 +211,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		int16_t eval;
 
-		if (lmr) //LMR
+		if (lmr) //LMR implementation (replace by legal_move_count for PVS)
 		{
-			//search with reduced depth (TODO: replace bounds with -alpha-1, -alpha null window!!! when i will enable lmr back)
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
+			//search with null window and reduced depth
+			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, ~alpha, -alpha, hash ^ curmove_hash, ply + 1);
 
-			if (eval > alpha) //beat alpha: re-search with no LMR
+			if (eval > alpha) //beat alpha: re-search with full window and no reduction
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1);
 		}
 		else
@@ -298,31 +289,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	// return best_score; //FAIL SOFT
 }
 
-int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
+int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 {
-	// hash ^= Z_TURN; //switch sides in the hash function and account for double pawn pushes *before* probing table
-
-	// TT_ENTRY entry = get_entry(hash); //Try to get a TT entry
-	// uint16_t hash_move = 0;
-
-	// if (entry.flag && is_acceptable_capt(entry.move)) //TT hit
-	// {
-	// 	//TODO: try without is_acceptable
-
-	// 	tt_hits++;
-
-	// 	if (entry.flag == HF_EXACT) //exact hit: always return eval
-	// 		return entry.eval;
-	// 	if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
-	// 		return beta;
-	// 	if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
-	// 		return alpha;
-		
-	// 	tt_hits--;
-
-		// hash_move = entry.move;
-	// }
-
 	//if stand pat causes a beta cutoff, return before generating moves
 	int16_t stand_pat = evaluate() * ((stm & BLACK) ? -1 : 1); //stand pat score
 	if (stand_pat >= beta)
@@ -343,8 +311,6 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
 		mlist.count--;
 
 		MOVE curmove = mlist.moves[mlist.count];
-		// uint64_t curmove_hash = move_hash(curmove);
-
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
@@ -355,9 +321,6 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta/* , uint64_t hash */)
 
 		node_count++;
 
-		// curmove_hash ^= move_hash(curmove);
-
-		// int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha, hash ^ curmove_hash);
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 
 		unmake_move(stm, curmove, res);
@@ -389,7 +352,7 @@ void search_root(uint32_t time_ms)
 		node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 		tt_hits = 0; //reset TT hit count
-		collisions = 0; //reset COLLISION count (DEBUG)
+		// collisions = 0; //reset COLLISION count
 
 		//do search and measure elapsed time
 		clock_t start = clock();
@@ -425,7 +388,7 @@ void search_root(uint32_t time_ms)
 		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
 		std::cout << " tthits " << tt_hits; //echoing TT entry hit count
-		std::cout << " COLLISIONS " << collisions; //echoing number of collisions (TODO: fix TT bugs and get this to 0)
+		// std::cout << " COLLISIONS " << collisions; //echoing number of type 1 (key) collisions
 
 		std::cout << " pv ";
 		int c = pv_length[0];

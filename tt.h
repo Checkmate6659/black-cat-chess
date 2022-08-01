@@ -183,10 +183,6 @@ inline uint64_t move_hash(uint8_t stm, MOVE move)
         hash ^= zobrist_table[current_piece << 7 | (move.tgt - 2)]; //queenside rook on a-file
     }
 
-    //This "cheat line" works; but it's slow af! (and we're here to make the thing fast, so...)
-    // hash = 0;
-    // for (uint8_t i = 0; i < 120; i++) if (!(i & OFFBOARD)) hash ^= zobrist_table[(board[i] & 15) << 7 | i]; //DEBUG: hash all pieces
-
     //calculate castling rights
     uint8_t king_square = plist[(stm & 16) ^ 16];
     uint8_t king_status = board[king_square];
