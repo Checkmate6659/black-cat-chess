@@ -166,7 +166,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
 	//NOTE: the following statement will only be of any use when partial or full move legality will be implemented!
-	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : 0; //checkmate or stalemate
+	if (mlist.count == 0) return incheck ? MATE_SCORE + ply : STALEMATE; //checkmate or stalemate
 
 	//needed for TT
 	int16_t old_alpha = alpha; //save an old alpha for handling exact TT scores
@@ -276,7 +276,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	}
 
 	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
-		return incheck ? MATE_SCORE + ply : 0; //king in check = checkmate (we lose)
+		return incheck ? MATE_SCORE + ply : STALEMATE; //king in check = checkmate (we lose); otherwise stalemate
 	
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!

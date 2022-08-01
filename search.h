@@ -8,6 +8,11 @@
 #include "order.h"
 #include "posix.h"
 
+//Draw scores for different endings to implement different contempt factors
+#define STALEMATE 0 //Stalemate: side to move has no legal moves: positive contempt factor = negative value
+#define REPETITION 0 //TODO
+#define FIFTY_MOVE 0 //TODO
+
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
 #define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
