@@ -186,13 +186,17 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
 
-	if (!incheck && nullmove <= 0 && beta - alpha == 1 && nullmove_safe(stm)) //No NMH in PV nodes, when in check or when in late endgame
+	if (beta - alpha == 1) //Non-PV node
 	{
-		//Try search with null move (enemy's turn, ply + 1)
-		int16_t null_move_val = -search(stm ^ ENEMY, depth - std::min(depth, (uint8_t)(1 + NULL_MOVE_REDUCTION)), -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
+		//Null move pruning
+		if (depth > NULL_MOVE_REDUCTION && nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
+		{
+			//Try search with null move (enemy's turn, ply + 1)
+			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - NULL_MOVE_REDUCTION, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
 
-		if (null_move_val >= beta) //Null move beat beta
-			return beta;
+			if (null_move_val >= beta) //Null move beat beta
+				return beta; //fail high
+		}
 	}
 
 	MLIST mlist;
@@ -249,7 +253,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		int16_t eval;
 
-		if (legal_move_count) //LMR implementation, merged with PVS (switch legal_move_count to lmr to disable PVS)
+		if (lmr) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
