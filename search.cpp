@@ -247,7 +247,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
 			lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
 	
-		legal_move_count++;
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 
 		node_count++;
@@ -255,7 +254,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		int16_t eval;
 
-		if (lmr) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
+		if (legal_move_count /* lmr */) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
@@ -265,6 +264,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 		else
 			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+
+		legal_move_count++; //only implement legal_move_count here, so that its equal to 0 on the first move in the PVS condition
 
 		unmake_move(stm, curmove, res);
 
