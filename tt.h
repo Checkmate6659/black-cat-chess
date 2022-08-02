@@ -18,6 +18,7 @@
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
 #define Z_CASTLE(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
 #define Z_DPP(lt) ((lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128])) //black WPAWN board (unused); uses central 2 rows of the board
+#define Z_NULLMOVE (zobrist_table[130]) //c8 entry on black WPAWN board (unused, since white pawns are not black); use for null move pruning
 
 #define REPLACEMENT_SCHEME(depth, entry_depth) ((uint16_t)(depth) * REPLACEMENT_DEN >= (uint16_t)(entry_depth) * REPLACEMENT_NUM) //only replace when depth * DEN > entry_depth * NUM
 #define REPLACEMENT_NUM 1 //replacement scheme numerator

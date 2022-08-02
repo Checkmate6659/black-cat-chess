@@ -102,8 +102,22 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 	return sum;
 }
 
+bool nullmove_safe(uint8_t stm)
+{
+    uint8_t nullmove_material[] = {0, 0, 0, 1, 0, 1, 2, 2}; //Null move safety values for each piece type
+    int8_t nullmove_counter = 2; //minimum count is 2 (major piece or 2 minor pieces); otherwise null move is not safe
+
+    for (uint8_t plist_idx = (stm & 16) ^ 17; plist_idx & 15; plist_idx++) //iterate through all friendly pieces (except for the king)
+    {
+        nullmove_counter -= nullmove_material[board[plist_idx] & PTYPE]; //decrement counter for each piece
+        if (nullmove_counter <= 0) return true; //Null move is safe: zugzwang unlikely
+    }
+
+    return false; //Null move is dangerous: late endgame, zugzwang likely
+}
+
 //TODO: implement draw by insufficient material
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply, int8_t last_zeroing_ply)
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
@@ -172,6 +186,15 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
 
+	if (!incheck && nullmove <= 0 && beta - alpha == 1 && nullmove_safe(stm)) //No NMH in PV nodes, when in check or when in late endgame
+	{
+		//Try search with null move (enemy's turn, ply + 1)
+		int16_t null_move_val = -search(stm ^ ENEMY, depth - std::min(depth, (uint8_t)(1 + NULL_MOVE_REDUCTION)), -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
+
+		if (null_move_val >= beta) //Null move beat beta
+			return beta;
+	}
+
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
@@ -229,13 +252,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (legal_move_count) //LMR implementation, merged with PVS (switch legal_move_count to lmr to disable PVS)
 		{
 			//search with null window and potentially reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
-				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
+				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 		}
 		else
-			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 
 		unmake_move(stm, curmove, res);
 
@@ -379,6 +402,7 @@ void search_root(uint32_t time_ms)
 		clock_t start = clock();
 		int16_t eval = search(board_stm, depth, board_last_target, alpha, beta,
 			board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+			1, //don't allow NMP at the root, but allow it on subsequent plies
 			0, -half_move_clock);
 		clock_t end = clock();
 

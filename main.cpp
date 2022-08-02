@@ -7,7 +7,7 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __ENGINE_VERSION__ "2.1-dev"
+#define __ENGINE_VERSION__ "2.1-dev NMH"
 
 
 int main()
