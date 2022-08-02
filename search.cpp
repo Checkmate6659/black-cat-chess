@@ -194,6 +194,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - NULL_MOVE_REDUCTION, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
 
+			if (panic) return 0; //check if we ran out of time
+
 			if (null_move_val >= beta) //Null move beat beta
 				return beta; //fail high
 		}
@@ -258,6 +260,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			if (panic) return 0; //check if we ran out of time
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);

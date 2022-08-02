@@ -8,9 +8,9 @@
 #include "order.h"
 #include "posix.h"
 
-//Draw scores for different endings to implement different contempt factors
+//Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
 #define STALEMATE 0 //Stalemate: side to move has no legal moves
-#define REPETITION 0 //TODO
+#define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -27,7 +27,7 @@
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
 #define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
-#define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score
+#define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score (NOT IMPLEMENTED; didn't matter, maybe that will change later)
 
 
 typedef uint32_t RPT_INDEX; //Repetition table index
