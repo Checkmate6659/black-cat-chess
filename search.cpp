@@ -199,6 +199,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 	}
 
+	// depth = std::min(depth + incheck, MAX_DEPTH); //check extension (add safety to avoid overflow)
+
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
