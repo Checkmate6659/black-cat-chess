@@ -17,6 +17,10 @@
 #define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
+//SEE activation (has yielded me bad results so far because of significant slowness)
+#define SEE_SEARCH false //activate during main search
+#define SEE_QSEARCH false //activate during qsearch
+
 #define DELTA 300 //delta pruning threshold
 #define LMR_MINDEPTH 3 //LMR minimum depth (included)
 #define LMR_THRESHOLD 2 //search first 2 legal moves with full depth

@@ -39,18 +39,19 @@
 
 //Move scores (I will have to rework this later)
 #define SCORE_HASH				0xFFFFFFFF //Hash move
-#define SCORE_PROMO_Q			0xC00000FF //Promotion to queen (only promo valued before captures)
-#define SCORE_PROMO_N			0xC00000C6 //Promotion to knight
-#define SCORE_PROMO_R			0xC00000C5 //Promotion to rook
-#define SCORE_PROMO_B			0xC00000C4 //Promotion to bishop
-#define SCORE_CAPT				0xC00000C7 //Capturing a piece (with MVV-LVA: add (VICTIM << 3) - AGGRESSOR => spans from 0xC7 to 0xFD, since victim is minimum 0x01, a white pawn) NOTE: value 0xc6 itself is unused
-#define SCORE_DCHECK			0xC00000C3 //Double check: extremely dangerous move (TODO: should even be ranking that before captures)
-#define SCORE_CHECK				0xC00000C2 //Simple check: can be dangerous, don't look for those at low depth (3 or less) since it's slow
-#define SCORE_KILLER_PRIMARY	0xB0000001 //Killer move: primary killer move
+#define SCORE_PROMO_Q			0xE0000000 //Promotion to queen (only promo valued before captures)
+#define SCORE_PROMO_N			0xB8000000 //Promotion to knight
+#define SCORE_PROMO_R			0xB7000000 //Promotion to rook
+#define SCORE_PROMO_B			0xB6000000 //Promotion to bishop
+#define SCORE_CAPT				0xC0000000 //Capturing a piece (with MVV-LVA: add (VICTIM << 3) - AGGRESSOR => spans from 0xC7 to 0xFD, since victim is minimum 0x01, a white pawn) NOTE: value 0xc6 itself is unused
+#define SCORE_DCHECK			0xE0000000 //Double check: extremely dangerous move (TODO: should even be ranking that before captures)
+#define SCORE_CHECK				0xB8000000 //Simple check: can be dangerous, don't look for those at low depth (3 or less) since it's slow
+#define SCORE_KILLER_PRIMARY	0xB0010000 //Killer move: primary killer move
 #define SCORE_KILLER_SECONDARY	0xB0000000 //Killer move: secondary killer move
 #define SCORE_EVADE				0x80000000 //Evasion: move that frees itself from an enemy attack detected by NMH (TODO)
-#define SCORE_CASTLE			0x41 //Castling: higher score since it protects king; although it is easily surpassed by a move with good history
-#define SCORE_QUIET				0x40 //Quiet move: add history (TODO)
+#define SCORE_CASTLE			0x70000000 //Castling: higher score since it protects king; although it is easily surpassed by a move with good history
+#define SCORE_QUIET				0x40000040 //Quiet move: add history
+#define PAWN_ATTACK_PENALTY		0x1000 //Pawn attack penalty: subtract from quiet moves that land a piece on a square attacked by a pawn
 
 //Generates a unique 16-bit identifier for any move (be careful with parentheses tho; could be improved!)
 #define MOVE_ID(m) (((m).src << 8 | (m).tgt) + (m).promo)
@@ -97,6 +98,7 @@ extern int8_t half_move_clock;
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 const uint32_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
+const int16_t SEE_VALUES[] = {0, 2, 2, 6, 4096, 7, 10, 19}; //SEE values for each piece type
 
 
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
@@ -106,5 +108,7 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm); //Generating "loud" moves o
 
 MOVE_RESULT make_move(uint8_t stm, MOVE move); //Make a move, and give a MOVE_RESULT struct with the takeback info
 void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result); //Use the MOVE_RESULT given out by a make_move function to unmake that move
+
+MOVE get_smallest_attacker_move(uint8_t stm, uint8_t square); //Get the move that attacks the target square with the lowest valued piece (for SEE)
 
 #endif

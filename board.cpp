@@ -656,3 +656,63 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 		}
 	}
 }
+
+MOVE get_smallest_attacker_move(uint8_t stm, uint8_t square)
+{
+	//quite a lot of extra instructions for doing black first white second in the piece lists
+	uint8_t end_value = (stm ^ ENEMY) << 1; //start value + 16 pieces
+
+	uint8_t smallest_attacker_square = 0xFF;
+	int16_t smallest_value = 0x7FFF;
+
+	for (uint8_t plist_idx = (stm & 16) ^ 16; plist_idx < end_value; plist_idx++) //iterate through the attacker's pieces
+	{
+		uint8_t cur_sq = plist[plist_idx];
+
+		if (cur_sq & OFFBOARD) continue; //the piece has been captured: signaled by an off-the-board square (could improve that in the future)
+
+		uint8_t rel = 0x77 + square - cur_sq;
+		uint8_t ptype = board[cur_sq] & PTYPE; //The piece type
+		uint8_t ray = RAYS[rel] & RAYMSK[ptype];
+
+		if (!ray) continue; //no way that's attacking!
+
+		int16_t piece_value = SEE_VALUES[ptype]; //retrieve piece's value
+
+		if (ptype < 5) //There is an attack from a leaper: cannot be blocked
+		{
+			if (piece_value < smallest_value)
+			{
+				smallest_value = piece_value;
+				smallest_attacker_square = cur_sq;
+			}
+		}
+
+		//now we have to iterate through ALL the squares in that direction!
+		int8_t offset = RAY_OFFSETS[rel];
+
+		cur_sq -= offset; //i fucked up: offset is always the wrong sign
+
+		while (cur_sq != square) //don't have to check for off-the-board, since the ray can only be in there
+		{
+			//printf("%x,%x,%x\n", cur_sq, board[cur_sq], offset);
+			if (board[cur_sq]) goto square_attacked_abort;
+
+			cur_sq -= offset;
+		}
+
+		//Nothing has been hit: square is under attack
+		//Update smallest piece if possible
+		if (piece_value < smallest_value)
+		{
+			smallest_value = piece_value;
+			smallest_attacker_square = plist[plist_idx]; //cur_sq has been modified: we have to retrieve it again
+		}
+
+	square_attacked_abort:; //Aborted square attack loop: hit a piece in-between
+	}
+
+	if (smallest_attacker_square != 0xFF)
+		return MOVE { smallest_attacker_square, square, F_CAPT, 0, 0 };
+	return MOVE { 0, 0, 0, 0, 0 }; //No piece can capture: return all zeroes
+}

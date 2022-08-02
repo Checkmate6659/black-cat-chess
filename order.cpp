@@ -10,7 +10,7 @@ void clear_history()
     for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] = 0;
 }
 
-void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
+void order_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
@@ -28,8 +28,24 @@ void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
         else if (curmove.flags & F_CAPT)
         {
             curmove.score = SCORE_CAPT;
-            curmove.score -= board[curmove.src] & PTYPE;
-            curmove.score += (board[curmove.tgt] & PTYPE) << 3;
+            if (use_see) //SEE
+            {
+                curmove.score += see(stm, curmove.tgt);
+            }
+            else //MVV-LVA
+            {
+                curmove.score -= board[curmove.src] & PTYPE;
+                curmove.score += (board[curmove.tgt] & PTYPE) << 3;
+            }
+
+            // //enemy pawn attack penalty (temp)
+            // uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)
+            // uint8_t pawn_rank_square = curmove.tgt + (stm << 2) - 48;
+            
+            // if (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) //if the target is attacked by a pawn
+            //     curmove.score -= PAWN_ATTACK_PENALTY; //penalize the move
+            // else if (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) //same on the other side
+            //     curmove.score -= PAWN_ATTACK_PENALTY;
         }
         else if (curmove.flags < F_CAPT) //neither capture nor promo
         {
@@ -48,6 +64,18 @@ void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
             {
                 curmove.score = SCORE_QUIET;
                 curmove.score += history[PSQ_INDEX(curmove)];
+
+                //penalize leaving pieces attacked by enemy pawns
+                uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)
+                uint8_t pawn_rank_square = curmove.tgt + (stm << 2) - 48;
+
+                if (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) //if the target is attacked by a pawn
+                    curmove.score -= PAWN_ATTACK_PENALTY; //penalize the move
+                else if (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) //same on the other side
+                    curmove.score -= PAWN_ATTACK_PENALTY;
+
+                // curmove.score -= (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) * PAWN_ATTACK_PENALTY;
+                // curmove.score -= (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) * PAWN_ATTACK_PENALTY;
             }
         }
 
@@ -60,4 +88,19 @@ void order_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
         }
         mlist->moves[j] = curmove;
     }
+}
+
+int16_t see(uint8_t stm, uint8_t square)
+{
+    int16_t value = 0;
+    MOVE curmove = get_smallest_attacker_move(stm, square);
+
+    if (curmove.flags) //a capture is possible (otherwise a MOVE with all zeroes will be returned)
+    {
+        MOVE_RESULT res = make_move(stm, curmove);
+        value = std::max(0, SEE_VALUES[res.piece & PTYPE] - see(stm ^ ENEMY, square));
+        unmake_move(stm, curmove, res);
+    }
+
+    return value;
 }
