@@ -102,6 +102,7 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 	return sum;
 }
 
+//TODO: implement draw by insufficient material
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
@@ -225,10 +226,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		int16_t eval;
 
-		if (lmr) //LMR implementation (replace by legal_move_count for PVS)
+		if (legal_move_count) //LMR implementation, merged with PVS (switch legal_move_count to lmr to disable PVS)
 		{
-			//search with null window and reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, ~alpha, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
+			//search with null window and potentially reduced depth
+			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, ply + 1, updated_last_zeroing_ply);
