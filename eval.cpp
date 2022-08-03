@@ -1,46 +1,28 @@
 #include "eval.h"
 
 
+#define PSQT_PADDING 0,0,0,0,0,0,0,0,
+
 const int16_t mg_piece_values[] = {
-    //Black pieces (16-23)
-    0, //0 is the empty square
-    0, //1 is the white pawn
-    -100, //2 is the black pawn
-    -320, //3 is the black knight
-    MATE_SCORE / 2, //4 is the black king (this high value may not be necessary)
-    -330, //5 is the black bishop
-    -500, //6 is the black rook
-    -900, //7 is the black queen
-    //White pieces (8-15)
     0, //0 is the empty square
     100, //1 is the white pawn
-    0, //2 is the black pawn
-    320, //3 is the white knight
-    -MATE_SCORE / 2, //4 is the white king
-    330, //5 is the white bishop
-    500, //6 is the white rook
-    900, //7 is the white queen
+    100, //2 is the black pawn
+    320, //3 is the knight
+    -MATE_SCORE / 2, //4 is the king
+    330, //5 is the bishop
+    500, //6 is the rook
+    900, //7 is the queen
 };
 
 const int16_t eg_piece_values[] = {
-    //Black pieces (16-23)
-    0, //0 is the empty square
-    0, //1 is unused
-    -100, //2 is the black pawn
-    -320, //3 is the black knight
-    MATE_SCORE / 2, //4 is the black king (this high value may not be necessary)
-    -330, //5 is the black bishop
-    -500, //6 is the black rook
-    -900, //7 is the black queen
-    //White pieces (8-15)
     0, //0 is the empty square
     100, //1 is the white pawn
-    0, //2 is unused
-    320, //3 is the white knight
-    -MATE_SCORE / 2, //4 is the white king
-    330, //5 is the white bishop
-    500, //6 is the white rook
-    900, //7 is the white queen
+    100, //2 is the black pawn
+    320, //3 is the knight
+    -MATE_SCORE / 2, //4 is the king
+    330, //5 is the bishop
+    500, //6 is the rook
+    900, //7 is the queen
 };
 
 const uint8_t game_phase[] = {0,
@@ -182,10 +164,11 @@ int16_t evaluate()
         uint8_t piece = board[sq];
         if (!piece) continue;
 
-        uint8_t psqt_index = ((piece & 8) ^ 8) + sq;
+        uint8_t psqt_index = sq ^ (piece & 16) * 7;
+        int16_t perspective = (piece & 16) ? -1 : 1;
 
-        midgame_psqt += mg_piece_values[piece & 15] + PSQT_MG[piece & PTYPE][psqt_index]; //midgame material/PSQT
-        endgame_psqt += eg_piece_values[piece & 15] + PSQT_EG[piece & PTYPE][psqt_index]; //endgame material/PSQT
+        midgame_psqt += perspective * (mg_piece_values[piece & 7] + PSQT_MG[piece & PTYPE][psqt_index]); //midgame material/PSQT
+        endgame_psqt += perspective * (eg_piece_values[piece & 7] + PSQT_EG[piece & PTYPE][psqt_index]); //endgame material/PSQT
     }
 
     int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
