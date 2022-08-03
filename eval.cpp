@@ -7,7 +7,7 @@ const int16_t piece_values[] = {
     0, //1 is the white pawn
     -100, //2 is the black pawn
     -320, //3 is the black knight
-    MATE_SCORE - 1, //4 is the black king (extremely high value, more than the mate score)
+    MATE_SCORE / 2, //4 is the black king (this high value may not be necessary)
     -330, //5 is the black bishop
     -500, //6 is the black rook
     -900, //7 is the black queen
@@ -16,7 +16,7 @@ const int16_t piece_values[] = {
     100, //1 is the white pawn
     0, //2 is the black pawn
     320, //3 is the white knight
-    1 - MATE_SCORE, //4 is the white king (extremely high value, more than the mate score)
+    MATE_SCORE / 2, //4 is the white king
     330, //5 is the white bishop
     500, //6 is the white rook
     900, //7 is the white queen
