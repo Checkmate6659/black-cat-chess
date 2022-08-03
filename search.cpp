@@ -194,7 +194,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - NULL_MOVE_REDUCTION, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
 
-			if (panic) return 0; //check if we ran out of time
+			if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
 			if (null_move_val >= beta) //Null move beat beta
 				return beta; //fail high
@@ -229,7 +229,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		MOVE_RESULT res = make_move(stm, curmove);
 
-		//Failed optimization: if the move is illegal, then we should not search it!
+		//If the move is illegal, then we should not search it!
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
 		{
 			// if (!legal_move_count && hash_move) collisions++;
@@ -241,15 +241,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
-		//have to fetch LMR before legal move count is increased
-		uint8_t lmr = 0;
-
 		//LMR can always be applied if lmr_move_count != 0, which means no if statement is needed here
-		lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
+		uint8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
 		if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
 			lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
 	
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
+		else lmr = 0; //don't do LMR in check or on tactical moves
 
 		node_count++;
 		curmove_hash ^= move_hash(stm, curmove);
@@ -260,7 +258,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
-			if (panic) return 0; //check if we ran out of time
+			if (panic) //check if we ran out of time
+			{
+				unmake_move(stm, curmove, res); //we have to unmake the moves!
+				return 0;
+			}
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
@@ -387,17 +389,16 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 void search_root(uint32_t time_ms)
 {
-	MOVE best_move;
+	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
 
 	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
-	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
-
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
+	MOVE best_move;
 	
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached

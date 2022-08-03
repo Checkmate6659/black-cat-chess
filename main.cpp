@@ -7,8 +7,8 @@
 #include "tt.h"
 #include "time_manager.h"
 
-// #define __TEST_VERSION__
-#define __TEST_NAME__ "notapering"
+#define __TEST_VERSION__
+#define __TEST_NAME__ "tapering"
 #define __ENGINE_VERSION__ "2.1-dev"
 
 

@@ -22,6 +22,15 @@ const int16_t piece_values[] = {
     900, //7 is the white queen
 };
 
+const uint8_t game_phase[] = {0,
+    0, 0, //Pawns don't count in the game phase
+    1, //Knights
+    0, //Kings don't count
+    1, //Bishops
+    2, //Rooks
+    4, //Queens
+};
+
 
 //On every PSQT, the White side is on the left, and the Black side is on the top.
 const int8_t PAWN_PSQT[] = {
@@ -129,16 +138,20 @@ const int8_t *PSQT_EG[] = {
 
 int16_t evaluate()
 {
-    int16_t material_psqt_sum = 0;
-
-    uint8_t nqueens = 0;
+    uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
 
     //endgame detection
-    for (uint8_t i = 0; i < 32; i++) //count the number of queens (if there are no queens, it's an endgame; if 1 side only has a queen, its probably winning)
+    for (uint8_t i = 1; i < 32; i++) //calculate the phase of the game
     {
         uint8_t sq = plist[i];
-        if (sq != 0xFF && (board[sq] & PTYPE) == QUEEN) nqueens++;
+        if (sq != 0xFF) phase += game_phase[board[sq] & PTYPE]; //add to the game phase
     }
+
+    phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
+
+    int16_t material = 0;
+    int16_t midgame_psqt = 0;
+    int16_t endgame_psqt = 0;
 
     //piece_values
     for (uint8_t i = 0; i < 32; i++)
@@ -147,11 +160,15 @@ int16_t evaluate()
         if (sq == 0xFF) continue; //piece has been captured
 
         uint8_t piece = board[sq];
-        material_psqt_sum += piece_values[piece & 0x0F]; //get the piece's value and add it to the total material sum
+        if (!piece) continue;
 
-        int8_t **psqt = (int8_t**)(nqueens ? PSQT_MG : PSQT_EG);
-        material_psqt_sum += psqt[piece & PTYPE][((piece & 8) ^ 8) + sq];
+        material += piece_values[piece & 15]; //get the piece's value and add it to the total material sum
+
+        midgame_psqt += PSQT_MG[piece & PTYPE][((piece & 8) ^ 8) + sq];
+        endgame_psqt += PSQT_EG[piece & PTYPE][((piece & 8) ^ 8) + sq];
     }
 
-    return material_psqt_sum;
+    int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
+
+    return material + psqt_eval;
 }
