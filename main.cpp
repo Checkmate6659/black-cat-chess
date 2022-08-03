@@ -7,6 +7,8 @@
 #include "tt.h"
 #include "time_manager.h"
 
+// #define __TEST_VERSION__
+#define __TEST_NAME__ "notapering"
 #define __ENGINE_VERSION__ "2.1-dev"
 
 
@@ -43,9 +45,13 @@ int main()
 
 		if(command == "uci")
 		{
+#ifdef __TEST_VERSION__
+			std::cout << "id name " << __TEST_NAME__ << "\nuciok\n";
+#else
 			std::cout << "id name Black Cat v" __ENGINE_VERSION__ "\n";
 			std::cout << "id author Enigma\n";
 			std::cout << "uciok\n";
+#endif
 		}
 		else if(command == "isready")
 		{
