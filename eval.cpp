@@ -1,7 +1,7 @@
 #include "eval.h"
 
 
-const int16_t piece_values[] = {
+const int16_t mg_piece_values[] = {
     //Black pieces (16-23)
     0, //0 is the empty square
     0, //1 is the white pawn
@@ -16,7 +16,28 @@ const int16_t piece_values[] = {
     100, //1 is the white pawn
     0, //2 is the black pawn
     320, //3 is the white knight
-    MATE_SCORE / 2, //4 is the white king
+    -MATE_SCORE / 2, //4 is the white king
+    330, //5 is the white bishop
+    500, //6 is the white rook
+    900, //7 is the white queen
+};
+
+const int16_t eg_piece_values[] = {
+    //Black pieces (16-23)
+    0, //0 is the empty square
+    0, //1 is unused
+    -100, //2 is the black pawn
+    -320, //3 is the black knight
+    MATE_SCORE / 2, //4 is the black king (this high value may not be necessary)
+    -330, //5 is the black bishop
+    -500, //6 is the black rook
+    -900, //7 is the black queen
+    //White pieces (8-15)
+    0, //0 is the empty square
+    100, //1 is the white pawn
+    0, //2 is unused
+    320, //3 is the white knight
+    -MATE_SCORE / 2, //4 is the white king
     330, //5 is the white bishop
     500, //6 is the white rook
     900, //7 is the white queen
@@ -149,7 +170,6 @@ int16_t evaluate()
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
 
-    int16_t material = 0;
     int16_t midgame_psqt = 0;
     int16_t endgame_psqt = 0;
 
@@ -162,13 +182,13 @@ int16_t evaluate()
         uint8_t piece = board[sq];
         if (!piece) continue;
 
-        material += piece_values[piece & 15]; //get the piece's value and add it to the total material sum
+        uint8_t psqt_index = ((piece & 8) ^ 8) + sq;
 
-        midgame_psqt += PSQT_MG[piece & PTYPE][((piece & 8) ^ 8) + sq];
-        endgame_psqt += PSQT_EG[piece & PTYPE][((piece & 8) ^ 8) + sq];
+        midgame_psqt += mg_piece_values[piece & 15] + PSQT_MG[piece & PTYPE][psqt_index]; //midgame material/PSQT
+        endgame_psqt += eg_piece_values[piece & 15] + PSQT_EG[piece & PTYPE][psqt_index]; //endgame material/PSQT
     }
 
     int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
-    return material + psqt_eval;
+    return psqt_eval;
 }

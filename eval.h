@@ -8,7 +8,7 @@
 #define TOTAL_PHASE 24 //phase of starting position (readjust if changing game_phase array)
 
 
-extern const int16_t piece_values[];
+extern const int16_t mg_piece_values[], eg_piece_values[];
 extern const uint8_t game_phase[];
 int16_t evaluate();
 
