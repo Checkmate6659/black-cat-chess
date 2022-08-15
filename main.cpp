@@ -7,9 +7,9 @@
 #include "tt.h"
 #include "time_manager.h"
 
-// #define __TEST_VERSION__
-// #define __TEST_NAME__ ""
-#define __ENGINE_VERSION__ "2.1"
+#define __TEST_VERSION__
+#define __TEST_NAME__ "RFP"
+#define __ENGINE_VERSION__ "2.2-dev"
 
 
 int main()
@@ -45,13 +45,12 @@ int main()
 
 		if(command == "uci")
 		{
+			std::cout << "id name Black Cat v" __ENGINE_VERSION__;
 #ifdef __TEST_VERSION__
-			std::cout << "id name " << __TEST_NAME__ << "\nuciok\n";
-#else
-			std::cout << "id name Black Cat v" __ENGINE_VERSION__ "\n";
-			std::cout << "id author Enigma\n";
-			std::cout << "uciok\n";
+			std::cout << " " __TEST_NAME__;
 #endif
+			std::cout << "\nid author Enigma\n";
+			std::cout << "uciok\n";
 		}
 		//TODO: implement setoption command, and UCI options in general
 		else if(command == "isready")

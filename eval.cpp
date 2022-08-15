@@ -192,7 +192,7 @@ const int16_t *eg_psqt[] = {
 };
 
 
-int16_t evaluate()
+int16_t evaluate(uint8_t stm)
 {
     uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
 
@@ -226,5 +226,5 @@ int16_t evaluate()
 
     int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
-    return psqt_eval;
+    return psqt_eval * ((stm & BLACK) ? -1 : 1);
 }

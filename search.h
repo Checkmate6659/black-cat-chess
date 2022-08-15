@@ -17,6 +17,9 @@
 #define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
+#define RFP_MAX_DEPTH 8 //Max depth when RFP is active
+#define RFP_MARGIN 75 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+
 #define NULL_MOVE_REDUCTION 2
 #define NULL_MOVE_COOLDOWN 1
 
