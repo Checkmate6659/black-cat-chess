@@ -7,9 +7,9 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __TEST_VERSION__
-#define __TEST_NAME__ "changed_eval"
-#define __ENGINE_VERSION__ "2.1-dev"
+// #define __TEST_VERSION__
+// #define __TEST_NAME__ ""
+#define __ENGINE_VERSION__ "2.1"
 
 
 int main()
@@ -53,6 +53,7 @@ int main()
 			std::cout << "uciok\n";
 #endif
 		}
+		//TODO: implement setoption command, and UCI options in general
 		else if(command == "isready")
 		{
 			std::cout << "readyok\n";
