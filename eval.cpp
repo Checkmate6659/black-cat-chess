@@ -195,27 +195,18 @@ const int16_t *eg_psqt[] = {
 int16_t evaluate(uint8_t stm)
 {
     uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
-
-    //endgame detection
-    for (uint8_t i = 1; i < 32; i++) //calculate the phase of the game
-    {
-        uint8_t sq = plist[i];
-        if (sq != 0xFF) phase += game_phase[board[sq] & PTYPE]; //add to the game phase
-    }
-
-    phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
-
     int16_t midgame_psqt = 0;
     int16_t endgame_psqt = 0;
 
-    //piece_values
-    for (uint8_t i = 0; i < 32; i++)
+    //material/PSQT/game phase loop
+    for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
     {
         uint8_t sq = plist[i];
-        if (sq == 0xFF) continue; //piece has been captured
-
+        if (sq == 0xFF) continue;
+        
         uint8_t piece = board[sq];
-        if (!piece) continue;
+
+        phase += game_phase[piece & PTYPE]; //add to the game phase
 
         uint8_t psqt_index = sq ^ (piece & 16) * 7;
         int16_t perspective = (piece & 16) ? -1 : 1;
@@ -224,6 +215,7 @@ int16_t evaluate(uint8_t stm)
         endgame_psqt += perspective * (eg_piece_values[piece & 7] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
     }
 
+    phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
     int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
     return psqt_eval * ((stm & BLACK) ? -1 : 1);

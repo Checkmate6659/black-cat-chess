@@ -11,6 +11,8 @@ uint64_t tt_hits = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
+int16_t eval_stack[MAX_DEPTH];
+
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
 
@@ -177,27 +179,41 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return qsearch(stm, alpha, beta);
 	}
 
-	//Reverse futility pruning
-	int16_t static_eval = evaluate(stm);
-	if (depth < RFP_MAX_DEPTH)
-	{
-		uint16_t margin = RFP_MARGIN * depth;
-		if (static_eval - margin >= beta)
-			return beta; //FAIL HARD
-			// return static_eval - margin; //FAIL SOFT (consider using return static_eval)
-	}
-
 	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
 
 	if (repetition_table[rpt_index] == last_zeroing_ply && ply) //twofold repetition (checking of last_zeroing_ply to diminish risk of collision) and not at root
 		return REPETITION; //adjudicate
 
-	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
+	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF; //is the king under attack?
+	bool improving = false;
+
+	int16_t static_eval = evaluate(stm);
+	if (!incheck && ply >= 2) //if in check, improving is false
+	{
+		//if possible, use TT to improve on static eval
+		// if (entry.flag & (HF_EXACT | (entry.eval > static_eval ? HF_BETA : HF_ALPHA))) static_eval = entry.eval;
+		// else set_entry(key, HF_EXACT, 0, static_eval, MOVE {0, 0, 0, 0, 0}); //store static eval in TT
+
+		improving = static_eval > eval_stack[ply - 2]; //check if static eval is improving
+		improving = 0; //disable improving for now (adds extra nodes and loses elo)
+	}
+	eval_stack[ply] = static_eval;
+
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
 
 	if (beta - alpha == 1) //Non-PV node
 	{
+		//Reverse futility pruning/static null move pruning (conditions similar to Fruit)
+		if (!incheck
+		// && nullmove <= 0
+		&& !IS_MATE(beta) //don't rfp when beta is a mate value
+		// && nullmove_safe(stm) //null move has to be safe (not in check, zugzwang unlikely)
+		&& depth <= RFP_MAX_DEPTH
+		&& static_eval - RFP_MARGIN * (depth - improving) >= beta) //sufficient margin; 0 for improving and depth 1
+			return beta; //FAIL HARD
+			// return static_eval; //FAIL SOFT (consider using return static_eval - margin)
+
 		//Null move pruning
 		if (depth > NULL_MOVE_REDUCTION && nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
@@ -207,7 +223,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
 			if (null_move_val >= beta) //Null move beat beta
-				return beta; //fail high
+				return beta; //fail high, but hard
+				//TODO: write fail soft version for post-aspiwindow stuff
 		}
 	}
 
