@@ -3,6 +3,7 @@
 
 clock_t search_end_time = 0; //TODO: iterative deepening!!!
 bool panic = false;
+bool benchmark = false;
 
 uint64_t node_count = 0;
 uint64_t qcall_count = 0;
@@ -23,6 +24,8 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 {
 	if (!(qcall_count & 0x0FFF)) //check every 4096 nodes
 	{
+		if (benchmark) return false; //don't panic! you can't run out of time it's a fucking benchmark!
+		
 		clock_t now = clock();
 		if (now > search_end_time) //if we're past the time limit, return immediately
 		{

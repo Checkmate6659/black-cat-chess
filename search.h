@@ -46,6 +46,9 @@ typedef uint32_t RPT_INDEX; //Repetition table index
 extern uint8_t lmr_table[MAX_DEPTH][MAX_MOVE]; //LMR table
 extern int8_t repetition_table[RPT_SIZE]; //Repetition table
 
+extern uint64_t node_count; //node count for benchmarking
+extern bool benchmark; //benchmarking mode: don't panic!
+
 void init_lmr();
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
