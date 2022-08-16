@@ -21,6 +21,8 @@
 #define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
 #define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
+#define TT_FAIL_REDUCTION_MINDEPTH 5 //Min depth to reduce PV-nodes where probing was unsuccessful
+
 //SEE activation (has yielded me bad results so far because of significant slowness)
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch

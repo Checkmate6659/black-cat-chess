@@ -55,6 +55,8 @@ void init_lmr() //Initialize the late move reduction table
 			else if (move < 1) lmr_table[depth][move] = 0; //no reduction for first few moves (prev LMR_THRESHOLD)
 			else
 			{
+				//TODO: TUNE ALL THIS SHIT!
+
 				//Conventional LMR
 				// lmr_table[ply][move] = 1; //constant reduction
 				// lmr_table[ply][move] = ply / 3; //linear reduction (senpai); TODO: experiment with different denoms
@@ -68,6 +70,7 @@ void init_lmr() //Initialize the late move reduction table
 				// lmr_table[ply][move] = (uint8_t)(sqrt((double)ply - LMR_MINDEPTH) + sqrt((double)move - LMR_THRESHOLD)); //RELATIVE square root reduction
 				// lmr_table[ply][move] = (uint8_t)(log((double)ply - LMR_MINDEPTH)*log((double)move - LMR_THRESHOLD)); //RELATIVE log reduction
 
+				//Ethereal LMR
 				lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
 			}
 		}
@@ -181,6 +184,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return qsearch(stm, alpha, beta);
 	}
 
+	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (alternative IID)
+
 	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
 
 	if (repetition_table[rpt_index] == last_zeroing_ply && ply) //twofold repetition (checking of last_zeroing_ply to diminish risk of collision) and not at root
@@ -213,9 +218,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			return beta; //FAIL HARD
 			// return static_eval; //FAIL SOFT (consider using return static_eval - margin)
 
-		//Null move pruning
-		uint8_t reduction = /* std::min((static_eval - beta) / 147, 5) + depth/3 */ NULL_MOVE_REDUCTION_CONST /* + improving */; //reduction is constant
-		if (depth > reduction && nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
+		//Null move pruning (TODO: tune enhancements)
+		uint8_t reduction;
+		reduction = NULL_MOVE_REDUCTION_CONST; //const reduction
+		// reduction = std::min((static_eval - beta) / 147, 5) + depth/3 + NULL_MOVE_REDUCTION_CONST; //SF-ish (uses const 4)
+		// reduction = NULL_MOVE_REDUCTION_CONST + depth/6 + std::min(3, (static_eval - beta) / 200); //Ethereal-ish (uses const 4)
+
+		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
+		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
@@ -268,7 +278,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
-		//LMR implementation close to Ethereal
+		//LMR implementation close to Ethereal (TODO: tune)
 		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
 		lmr += (beta - alpha == 1) + !improving; //reduce less for PV and/or improving (LMR is a fail-low/loss-seeking heuristic)
 		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
