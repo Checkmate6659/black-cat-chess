@@ -220,9 +220,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		//Null move pruning (TODO: tune enhancements)
 		uint8_t reduction;
-		reduction = NULL_MOVE_REDUCTION_CONST; //const reduction
+		// reduction = NULL_MOVE_REDUCTION_CONST; //const reduction
 		// reduction = std::min((static_eval - beta) / 147, 5) + depth/3 + NULL_MOVE_REDUCTION_CONST; //SF-ish (uses const 4)
-		// reduction = NULL_MOVE_REDUCTION_CONST + depth/6 + std::min(3, (static_eval - beta) / 200); //Ethereal-ish (uses const 4)
+		reduction = NULL_MOVE_REDUCTION_CONST + depth/6 + std::min(3, (static_eval - beta) / 200); //Ethereal-ish (uses const 4)
 
 		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
 		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth

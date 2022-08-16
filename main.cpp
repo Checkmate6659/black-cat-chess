@@ -8,7 +8,7 @@
 #include "time_manager.h"
 
 #define __TEST_VERSION__
-#define __TEST_NAME__ "ELO GAINING TRICK; SAFE RFP; LMR ENHANCEMENT"
+#define __TEST_NAME__ "ETHEREAL NMP"
 #define __ENGINE_VERSION__ "2.2-dev"
 
 
