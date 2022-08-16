@@ -7,8 +7,8 @@
 #include "tt.h"
 #include "time_manager.h"
 
-#define __TEST_VERSION__
-#define __TEST_NAME__ "SIMPLEASPI30 FAILSOFT"
+// #define __TEST_VERSION__
+// #define __TEST_NAME__ ""
 #define __ENGINE_VERSION__ "2.2-dev"
 
 
@@ -71,6 +71,7 @@ int main(int argc, char** argv)
 {
 	init_zobrist(); //Initialize zobrist keys
 	init_lmr(); //Fill LMR table
+	clear_tt();
 	
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
