@@ -18,18 +18,19 @@
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
 #define RFP_MAX_DEPTH 8 //Max depth when RFP is active
-#define RFP_MARGIN 75 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-
-#define NULL_MOVE_REDUCTION 2
-#define NULL_MOVE_COOLDOWN 1
+#define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
 //SEE activation (has yielded me bad results so far because of significant slowness)
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch
 
 #define DELTA 300 //delta pruning threshold
-#define LMR_MINDEPTH 3 //LMR minimum depth (included)
-#define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
+
+#define NULL_MOVE_REDUCTION_CONST 2 //constant null move reduction
+
+// #define LMR_MINDEPTH 1 //LMR minimum depth (included)
+// #define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
 #define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score (NOT IMPLEMENTED; didn't matter, maybe that will change later)
 
 

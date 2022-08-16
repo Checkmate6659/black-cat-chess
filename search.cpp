@@ -48,11 +48,11 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 //http://www.talkchess.com/forum3/viewtopic.php?t=65273
 void init_lmr() //Initialize the late move reduction table
 {
-	for (uint8_t ply = 0; ply < MAX_DEPTH; ply++)
+	for (uint8_t depth = 0; depth < MAX_DEPTH; depth++) //prev ply
 		for (uint8_t move = 0; move < MAX_MOVE; move++)
 		{
-			if (ply < LMR_MINDEPTH) lmr_table[ply][move] = 0; //no reduction at too little depth
-			else if (move < LMR_THRESHOLD) lmr_table[ply][move] = 0; //no reduction for first few moves
+			if (depth < 1) lmr_table[depth][move] = 0; //no reduction at too little depth (prev LMR_MINDEPTH)
+			else if (move < 1) lmr_table[depth][move] = 0; //no reduction for first few moves (prev LMR_THRESHOLD)
 			else
 			{
 				//Conventional LMR
@@ -65,8 +65,10 @@ void init_lmr() //Initialize the late move reduction table
 				// lmr_table[ply][move] = (uint8_t)(log(ply * move)); //logarithmic
 				// lmr_table[ply][move] = move / 3; //move-linear reduction (default 3)
 				// lmr_table[ply][move] = (uint8_t)(sqrt((ply - LMR_MINDEPTH) * ply - LMR_MINDEPTH) + (move - LMR_THRESHOLD) * (move - LMR_THRESHOLD)); //distance
-				// lmr_table[ply][move] = (uint8_t)(sqrt((double)ply - LMR_MINDEPTH) + sqrt((double)move - LMR_THRESHOLD)); //RELATIVE square root reduction (fruit reloaded)
-				lmr_table[ply][move] = (uint8_t)(log1p((double)ply - LMR_MINDEPTH)*log1p((double)move - LMR_THRESHOLD)); //RELATIVE log reduction (stockfish)
+				// lmr_table[ply][move] = (uint8_t)(sqrt((double)ply - LMR_MINDEPTH) + sqrt((double)move - LMR_THRESHOLD)); //RELATIVE square root reduction
+				// lmr_table[ply][move] = (uint8_t)(log((double)ply - LMR_MINDEPTH)*log((double)move - LMR_THRESHOLD)); //RELATIVE log reduction
+
+				lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
 			}
 		}
 }
@@ -188,14 +190,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	bool improving = false;
 
 	int16_t static_eval = evaluate(stm);
-	if (!incheck && ply >= 2) //if in check, improving is false
+	if (!incheck && ply >= 2) //if in check, improving stays false; also don't do this close to the root (otherwise buffer overflow)
 	{
 		//if possible, use TT to improve on static eval
 		// if (entry.flag & (HF_EXACT | (entry.eval > static_eval ? HF_BETA : HF_ALPHA))) static_eval = entry.eval;
 		// else set_entry(key, HF_EXACT, 0, static_eval, MOVE {0, 0, 0, 0, 0}); //store static eval in TT
 
 		improving = static_eval > eval_stack[ply - 2]; //check if static eval is improving
-		improving = 0; //disable improving for now (adds extra nodes and loses elo)
 	}
 	eval_stack[ply] = static_eval;
 
@@ -204,21 +205,20 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	if (beta - alpha == 1) //Non-PV node
 	{
-		//Reverse futility pruning/static null move pruning (conditions similar to Fruit)
-		if (!incheck
-		// && nullmove <= 0
+		//Reverse futility pruning/static null move pruning
+		if (depth <= RFP_MAX_DEPTH
 		&& !IS_MATE(beta) //don't rfp when beta is a mate value
-		// && nullmove_safe(stm) //null move has to be safe (not in check, zugzwang unlikely)
-		&& depth <= RFP_MAX_DEPTH
-		&& static_eval - RFP_MARGIN * (depth - improving) >= beta) //sufficient margin; 0 for improving and depth 1
+		&& static_eval - RFP_MARGIN * depth - RFP_IMPR * improving >= beta) //sufficient margin
+		// && static_eval - RFP_MARGIN * depth >= beta) //basic impl (test this first!)
 			return beta; //FAIL HARD
 			// return static_eval; //FAIL SOFT (consider using return static_eval - margin)
 
 		//Null move pruning
-		if (depth > NULL_MOVE_REDUCTION && nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
+		uint8_t reduction = /* std::min((static_eval - beta) / 147, 5) + depth/3 */ NULL_MOVE_REDUCTION_CONST /* + improving */; //reduction is constant
+		if (depth > reduction && nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
 			//Try search with null move (enemy's turn, ply + 1)
-			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - NULL_MOVE_REDUCTION, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, NULL_MOVE_COOLDOWN, ply + 1, ply);
+			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
 
 			if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
@@ -268,11 +268,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
-		//LMR can always be applied if lmr_move_count != 0, which means no if statement is needed here
-		uint8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
-		if (depth >= LMR_MINDEPTH && depth < lmr + LMR_MINDEPTH) //the reduction is too high, and would get below LMR_MINDEPTH (only possible if LMR > 0)
-			lmr = depth - LMR_MINDEPTH; //don't reduce so much that depth would be below LMR_MINDEPTH (TODO: experiment with subtracting 1)
-	
+		//LMR implementation close to Ethereal
+		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
+		lmr += (beta - alpha == 1) + !improving; //reduce less for PV and/or improving (LMR is a fail-low/loss-seeking heuristic)
+		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
+
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 		else lmr = 0; //don't do LMR in check or on tactical moves
 
