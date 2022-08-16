@@ -156,21 +156,21 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			tt_hits++;
 
 			if (entry.flag == HF_EXACT) //exact hit: always return eval
-				return entry.eval;
+				return entry.eval; //FAIL SOFT
 			
 			//FAIL HARD
-			else if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
-				return beta;
-			else if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
-				return alpha;
+			// else if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+			// 	return beta;
+			// else if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+			// 	return alpha;
 			
 			//FAIL SOFT
-			// if (entry.flag == HF_BETA)
-			// 	alpha = std::max(alpha, entry.eval);
-			// else if (entry.flag == HF_ALPHA)
-			// 	beta = std::min(beta, entry.eval);
-			// if (alpha >= beta)
-			// 	return entry.eval;
+			if (entry.flag == HF_BETA)
+				alpha = std::max(alpha, entry.eval);
+			else if (entry.flag == HF_ALPHA)
+				beta = std::min(beta, entry.eval);
+			if (alpha >= beta)
+				return entry.eval;
 
 			tt_hits--;
 		}
@@ -215,8 +215,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		&& !IS_MATE(beta) //don't rfp when beta is a mate value
 		&& static_eval - RFP_MARGIN * depth - RFP_IMPR * improving >= beta) //sufficient margin
 		// && static_eval - RFP_MARGIN * depth >= beta) //basic impl (test this first!)
-			return beta; //FAIL HARD
-			// return static_eval; //FAIL SOFT (consider using return static_eval - margin)
+			// return beta; //FAIL HARD
+			return static_eval; //FAIL SOFT (consider using return static_eval - margin)
 
 		//Null move pruning (TODO: tune enhancements)
 		uint8_t reduction;
@@ -233,8 +233,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
 			if (null_move_val >= beta) //Null move beat beta
-				return beta; //fail high, but hard
-				//TODO: write fail soft version for post-aspiwindow stuff
+				// return beta; //fail high, but hard
+				return std::min(null_move_val, (int16_t)NULLMOVE_MATE); //fail soft: lazy way of not returning erroneous mate scores
 		}
 	}
 
@@ -350,8 +350,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					}
 
 					repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry)
-					return beta; //FAIL HARD
-					// return eval;  //FAIL SOFT
+					// return beta; //FAIL HARD
+					return eval;  //FAIL SOFT
 				}
 
 				pv_table[ply][ply] = curmove; //update principal variation
@@ -377,8 +377,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	else
 		set_entry(key, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
 
-	return alpha; //FAIL HARD
-	// return best_score; //FAIL SOFT
+	// return alpha; //FAIL HARD
+	return best_score; //FAIL SOFT
 }
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
@@ -437,8 +437,10 @@ void search_root(uint32_t time_ms)
 
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
-	MOVE best_move;
+	int16_t eval = qsearch(board_stm, alpha, beta); //first guess at the score is just qsearch = depth 0
 	
+	MOVE best_move;
+
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
 	{
@@ -450,10 +452,50 @@ void search_root(uint32_t time_ms)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
-		int16_t eval = search(board_stm, depth, board_last_target, alpha, beta,
+
+		uint16_t alpha_margin = ASPI_MARGIN;
+		uint16_t beta_margin = ASPI_MARGIN;
+
+		//set alpha and beta
+		alpha = (alpha_margin < MAX_ASPI_MARGIN) ? (eval - alpha_margin) : MATE_SCORE;
+		beta = (beta_margin < MAX_ASPI_MARGIN) ? (eval + beta_margin) : -MATE_SCORE;
+
+		//Simplified aspiration windows
+		eval = search(board_stm, depth, board_last_target, alpha, beta,
 			board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 			1, //don't allow NMP at the root, but allow it on subsequent plies
 			0, -half_move_clock);
+
+		if (eval <= alpha || eval >= beta) //Aspirated search failed: re-search on full window
+		{
+			alpha = MATE_SCORE;
+			beta = -MATE_SCORE;
+
+			eval = search(board_stm, depth, board_last_target, alpha, beta,
+				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+				1, //don't allow NMP at the root, but allow it on subsequent plies
+				0, -half_move_clock);
+		}
+
+		//More complex aspiration windows (fiddle with that later)
+		//Aspiration window loop: do-while to avoid skipping search entirely
+		// do {
+		// 	while(eval <= alpha || eval >= beta)
+		// 	{
+		// 		if (eval <= alpha) alpha_margin = alpha_margin * ASPI_MULTIPLIER;
+		// 		else if (eval >= beta) beta_margin = beta_margin * ASPI_MULTIPLIER;
+
+		// 		alpha = (alpha_margin < MAX_ASPI_MARGIN) ? (eval - alpha_margin) : MATE_SCORE;
+		// 		beta = (beta_margin < MAX_ASPI_MARGIN) ? (eval + beta_margin) : -MATE_SCORE;
+		// 	}
+
+		// 	eval = search(board_stm, depth, board_last_target, alpha, beta,
+		// 		board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+		// 		1, //don't allow NMP at the root, but allow it on subsequent plies
+		// 		0, -half_move_clock);
+		// } while(eval <= alpha || eval >= beta);
+
+
 		clock_t end = clock();
 
 		if (panic) break; //we do not have any more time!

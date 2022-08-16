@@ -17,6 +17,11 @@
 #define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
+#define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
+//TEMP DISABLED: max aspi margin; aspi multiplier (Simple Aspiration)
+#define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
+#define ASPI_MULTIPLIER 5/4 + 20 //multiply corresponding margin by this each time we fail (first number can be integer or A/B rational number, with A and B integers; add constant afterwards)
+
 #define RFP_MAX_DEPTH 8 //Max depth when RFP is active
 #define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
 #define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
