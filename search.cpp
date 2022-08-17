@@ -1,5 +1,14 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
+#ifdef TUNING_MODE
+int aspi_margin = 30, max_aspi_margin = 2000, aspi_mul = 3, aspi_constant = 10;
+int rfp_max_depth = 8, rfp_margin = 150, rfp_impr = 0;
+int iid_reduction_d = 5;
+int dprune = 300;
+int nmp_const = 2, nmp_depth = 6, nmp_evalmin = 3, nmp_evaldiv = 200;
+#endif
+
+
 
 clock_t search_end_time = 0; //TODO: iterative deepening!!!
 bool panic = false;
@@ -225,7 +234,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		uint8_t reduction;
 		// reduction = NULL_MOVE_REDUCTION_CONST; //const reduction
 		// reduction = std::min((static_eval - beta) / 147, 5) + depth/3 + NULL_MOVE_REDUCTION_CONST; //SF-ish (uses const 4)
-		reduction = NULL_MOVE_REDUCTION_CONST + depth/6 + std::min(3, (static_eval - beta) / 200); //Ethereal-ish (uses const 4)
+		reduction = NULL_MOVE_REDUCTION_CONST + depth/NULL_MOVE_REDUCTION_DEPTH + std::min(NULL_MOVE_REDUCTION_MIN, (static_eval - beta) / NULL_MOVE_REDUCTION_DIV); //Ethereal-ish (uses const 4)
 
 		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
 		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
