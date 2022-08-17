@@ -39,7 +39,7 @@ void reallocate_tt(TT_INDEX size) //size in MB
 
 void clear_tt()
 {
-    for (TT_INDEX i = 0; i < TT_SIZE; i++)
+    for (TT_INDEX i = 0; i < tt_size; i++)
         transpo_table[i].flag = 0; //flag of 0 means invalid entry: make entire table invalid
 }
 

@@ -53,7 +53,7 @@ uint64_t board_hash(uint8_t stm, uint8_t last_target); //DEBUG: returns a hash o
 inline TT_ENTRY get_entry(uint64_t key)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
-    TT_INDEX tt_index = key % TT_SIZE;
+    TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry = transpo_table[tt_index];
 
     // assert(tt_index < TT_SIZE);
@@ -71,7 +71,7 @@ inline TT_ENTRY get_entry(uint64_t key)
 inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
-    TT_INDEX tt_index = key % TT_SIZE;
+    TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry = transpo_table[tt_index];
 
     //insufficient depth

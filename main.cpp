@@ -231,7 +231,7 @@ int main(int argc, char** argv)
 
 			//update the option!
 			if (option_name == "Hash") reallocate_tt((TT_INDEX)uci_options[option_index].val_float); //reallocate TT
-			printf("size %u\n", tt_size);
+			// printf("size %u\n", tt_size);
 		}
 		else if(command == "position")
 		{
