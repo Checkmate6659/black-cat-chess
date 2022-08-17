@@ -429,7 +429,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 }
 
 
-void search_root(uint32_t time_ms)
+void search_root(uint32_t time_ms, uint8_t fixed_depth)
 {
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 
@@ -445,10 +445,10 @@ void search_root(uint32_t time_ms)
 	MOVE best_move;
 
 	//iterative deepening loop
-	for (uint8_t depth = 1; depth < MAX_DEPTH; depth++) //increase depth until MAX_DEPTH reached
+	for (uint8_t depth = 1; depth < std::min(fixed_depth, (uint8_t)MAX_DEPTH); depth++) //increase depth until MAX_DEPTH reached
 	{
 		panic = false; //reset panic flag
-		node_count = 0; //reset node and qsearch call count
+		if(!benchmark) node_count = 0; //reset node and qsearch call count
 		qcall_count = 0;
 		tt_hits = 0; //reset TT hit count
 		// collisions = 0; //reset COLLISION count
@@ -481,16 +481,28 @@ void search_root(uint32_t time_ms)
 				0, -half_move_clock);
 		}
 
-		//More complex aspiration windows (fiddle with that later)
+
+		//More complex aspiration windows
 		//Aspiration window loop: do-while to avoid skipping search entirely
 		// do {
 		// 	while(eval <= alpha || eval >= beta)
 		// 	{
-		// 		if (eval <= alpha) alpha_margin = alpha_margin * ASPI_MULTIPLIER;
-		// 		else if (eval >= beta) beta_margin = beta_margin * ASPI_MULTIPLIER;
+		// 		printf("CHECK");
+		// 		if (depth >= 4)
+		// 		{
+		// 			if (eval <= alpha) alpha_margin = alpha_margin * ASPI_MULTIPLIER + ASPI_CONSTANT;
+		// 			else if (eval >= beta) beta_margin = beta_margin * ASPI_MULTIPLIER + ASPI_CONSTANT;
 
-		// 		alpha = (alpha_margin < MAX_ASPI_MARGIN) ? (eval - alpha_margin) : MATE_SCORE;
-		// 		beta = (beta_margin < MAX_ASPI_MARGIN) ? (eval + beta_margin) : -MATE_SCORE;
+		// 			alpha = (alpha_margin < MAX_ASPI_MARGIN) ? (eval - alpha_margin) : MATE_SCORE;
+		// 			beta = (beta_margin < MAX_ASPI_MARGIN) ? (eval + beta_margin) : -MATE_SCORE;
+
+		// 			printf("%d %d %d %d\n", alpha, beta, alpha_margin, beta_margin);
+		// 		}
+		// 		else //Full-window search at low depth
+		// 		{
+		// 			alpha = MATE_SCORE;
+		// 			beta = -MATE_SCORE;
+		// 		}
 		// 	}
 
 		// 	eval = search(board_stm, depth, board_last_target, alpha, beta,
@@ -506,25 +518,31 @@ void search_root(uint32_t time_ms)
 
 		best_move = pv_table[0][0]; //save the best move
 
-		std::cout << "info score cp " << eval;
-		std::cout << " depth " << (int)depth;
-		std::cout << " nodes " << node_count;
-		std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
-		std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
-		std::cout << " tthits " << tt_hits; //echoing TT entry hit count
-		// std::cout << " COLLISIONS " << collisions; //echoing number of type 1 (key) collisions
+		if (!benchmark)
+		{
+			std::cout << "info score cp " << eval;
+			std::cout << " depth " << (int)depth;
+			std::cout << " nodes " << node_count;
+			std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
+			std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
+			std::cout << " tthits " << tt_hits; //echoing TT entry hit count
+			// std::cout << " COLLISIONS " << collisions; //echoing number of type 1 (key) collisions
 
-		std::cout << " pv ";
-		int c = pv_length[0];
-		for (uint8_t i = 0; i < c; i++) {
-			MOVE move = pv_table[0][i];
-			print_move(move);
+			std::cout << " pv ";
+			int c = pv_length[0];
+			for (uint8_t i = 0; i < c; i++) {
+				MOVE move = pv_table[0][i];
+				print_move(move);
+			}
+			std::cout << std::endl;
 		}
-		std::cout << std::endl;
 	}	
 
 	//print out the best move at the end of the search
-	std::cout << "bestmove ";
-	print_move(best_move);
-	std::cout << std::endl;
+	if (!benchmark)
+	{
+		std::cout << "bestmove ";
+		print_move(best_move);
+		std::cout << std::endl;
+	}
 }
