@@ -49,8 +49,6 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 #define NULL_MOVE_REDUCTION_DEPTH nmp_depth
 #define NULL_MOVE_REDUCTION_MIN nmp_evalmin
 #define NULL_MOVE_REDUCTION_DIV nmp_evaldiv
-
-
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)

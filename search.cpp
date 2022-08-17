@@ -10,7 +10,7 @@ int nmp_const = 2, nmp_depth = 6, nmp_evalmin = 3, nmp_evaldiv = 200;
 
 
 
-clock_t search_end_time = 0; //TODO: iterative deepening!!!
+clock_t search_end_time = 0;
 bool panic = false;
 bool benchmark = false;
 

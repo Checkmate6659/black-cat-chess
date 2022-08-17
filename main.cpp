@@ -25,6 +25,22 @@ typedef struct
 //NOTE: this table is going to be modified to store option values (although this is completely unnecessary for now)
 OPTION uci_options[] = {
 	{"Hash", "spin", 1, 16384, 16, ""}, //Max hash size 16GB (cannot test!); theoretical max with u32 indices and 14B entries would be 28GB
+
+#ifdef TUNING_MODE
+	{"AspiMargin", "spin", 1, 100, (double)aspi_margin, ""},
+	{"MaxAspiMargin", "spin", 2, 10000, (double)max_aspi_margin, ""},
+	{"AspiMultiplier", "spin", 1, 16, (double)aspi_mul, ""},
+	{"AspiConstant", "spin", 1, 1000, (double)aspi_constant, ""},
+	{"RFPMaxDepth", "spin", 1, 100, (double)rfp_max_depth, ""},
+	{"RFPMargin", "spin", 0, 1000, (double)rfp_margin, ""},
+	{"RFPImpr", "spin", 0, 1000, (double)rfp_impr, ""},
+	{"TTFailReductionMinDepth", "spin", 1, 100, (double)iid_reduction_d, ""},
+	{"Delta", "spin", 0, 10000, (double)dprune, ""},
+	{"NullMoveReductionConstant", "spin", 0, 100, (double)nmp_const, ""},
+	{"NullMoveReductionDepth", "spin", 1, 100, (double)nmp_depth, ""},
+	{"NullMoveReductionMin", "spin", 0, 100, (double)nmp_evalmin, ""},
+	{"NullMoveReductionDiv", "spin", 1, 10000, (double)nmp_evaldiv, ""},
+#endif
 };
 
 OPTION uci_defaults[sizeof(uci_options)/sizeof(OPTION)]; //so we need a second table to store the default values
@@ -173,7 +189,6 @@ int main(int argc, char** argv)
 
 			std::cout << "uciok\n";
 		}
-		//TODO: implement setoption command, and UCI options in general
 		else if(command == "isready")
 		{
 			std::cout << "readyok\n";
@@ -231,7 +246,22 @@ int main(int argc, char** argv)
 
 			//update the option!
 			if (option_name == "Hash") reallocate_tt((TT_INDEX)uci_options[option_index].val_float); //reallocate TT
-			// printf("size %u\n", tt_size);
+
+#ifdef TUNING_MODE
+			aspi_margin = uci_options[0].val_float;
+			max_aspi_margin = uci_options[1].val_float;
+			aspi_mul = uci_options[2].val_float;
+			aspi_constant = uci_options[3].val_float;
+			rfp_max_depth = uci_options[4].val_float;
+			rfp_margin = uci_options[5].val_float;
+			rfp_impr = uci_options[6].val_float;
+			iid_reduction_d = uci_options[7].val_float;
+			dprune = uci_options[8].val_float;
+			nmp_const = uci_options[9].val_float;
+			nmp_depth = uci_options[10].val_float;
+			nmp_evalmin = uci_options[11].val_float;
+			nmp_evaldiv = uci_options[12].val_float;
+#endif
 		}
 		else if(command == "position")
 		{
