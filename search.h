@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-#define TUNING_MODE
+// #define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
