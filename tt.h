@@ -8,7 +8,7 @@
 
 
 //TT size (default is 1 << 24 = 16777216)
-#define TT_SIZE ((1 << 28) / sizeof(TT_ENTRY))
+#define TT_SIZE ((1 << 24) / sizeof(TT_ENTRY))
 // #define TT_SIZE (1 << 24) //power of 2 TT size
 
 #define HF_EXACT 1
@@ -35,14 +35,16 @@ typedef struct {
     uint16_t move; //The best move of the previous search
 } TT_ENTRY;
 
-extern TT_ENTRY transpo_table[TT_SIZE];
+extern TT_ENTRY *transpo_table;
+extern TT_INDEX tt_size;
 
 
 extern uint64_t prng_state; //PRNG state
 extern uint64_t zobrist_table[]; //Zobrist table (uses [piece][square] indexing, similar to history table)
 
 uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
-void init_zobrist();
+void init_tt();
+void reallocate_tt(TT_INDEX size);
 void clear_tt();
 uint64_t board_hash(uint8_t stm, uint8_t last_target); //DEBUG: returns a hash of the board
 

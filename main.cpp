@@ -12,6 +12,23 @@
 #define __ENGINE_VERSION__ "2.2-dev"
 
 
+typedef struct
+{
+	std::string name;
+	std::string type;
+	double min, max, val_float;
+	std::string val_string;
+	//TODO: add action function
+} OPTION;
+
+//UCI options
+//NOTE: this table is going to be modified to store option values (although this is completely unnecessary for now)
+OPTION uci_options[] = {
+	{"Hash", "spin", 1, 16384, 16, ""}, //Max hash size 16GB (cannot test!); theoretical max with u32 indices and 14B entries would be 28GB
+};
+
+OPTION uci_defaults[sizeof(uci_options)/sizeof(OPTION)]; //so we need a second table to store the default values
+
 // Benchmarks from Bitgenie
 const std::string benchfens[50] = {
     "r3k2r/2pb1ppp/2pp1q2/p7/1nP1B3/1P2P3/P2N1PPP/R2QK2R w KQkq a6 0 14",
@@ -69,10 +86,9 @@ const std::string benchfens[50] = {
 
 int main(int argc, char** argv)
 {
-	init_zobrist(); //Initialize zobrist keys
+	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_lmr(); //Fill LMR table
-	clear_tt();
-	
+
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
 		node_count = 0;
@@ -103,9 +119,13 @@ int main(int argc, char** argv)
 
 	std::cout << "Black Cat v" __ENGINE_VERSION__ " by Enigma\n";
 
-	clear_tt(); //clear the transposition table (may not be necessary)
 	for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 		repetition_table[i] = -100;
+	
+	for (int option_index = 0; option_index < sizeof(uci_options)/sizeof(OPTION); option_index++) //initalize UCI defaults table
+	{
+		uci_defaults[option_index] = uci_options[option_index];
+	}
 	
 	
 	// load_fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");   					//STARTING POSITION
@@ -136,6 +156,19 @@ int main(int argc, char** argv)
 			std::cout << " " __TEST_NAME__;
 #endif
 			std::cout << "\nid author Enigma\n";
+
+			for (OPTION option : uci_defaults)
+			{
+				std::cout << "option name " << option.name << " type " << option.type;
+				if (option.type == "spin")
+					std::cout << " default " << option.val_float << " min " << option.min << " max " << option.max;
+				else if (option.type == "string")
+					std::cout << " default " << option.val_string;
+				else if (option.type == "check")
+					std::cout << " default " << (option.val_float != 0 ? "true" : "false");
+				std::cout << std::endl;
+			}
+
 			std::cout << "uciok\n";
 		}
 		//TODO: implement setoption command, and UCI options in general
@@ -154,6 +187,49 @@ int main(int argc, char** argv)
 		else if(command == "displayfull" || command == "printfull" || command == "dispf" || command == "df")
 		{
 			print_board_full(board);
+		}
+		else if(command == "setoption")
+		{
+			input_stream >> command; //command = "name"
+			input_stream >> command; //fetch first word of option name
+
+			std::string option_name = "";
+			std::string option_value = "";
+
+			while (input_stream && command != "value") //no option can have the word "value" in it!
+			{
+				option_name += command + " ";
+				input_stream >> command;
+			}
+
+			option_name = option_name.substr(0, option_name.size() - 1); //remove trailing space
+
+			//find UCI option index
+			int option_index = 0;
+			for (OPTION option : uci_options)
+			{
+				if (option.name == option_name)
+					break;
+				option_index++;
+			}
+
+			//command now has the value "value"
+			input_stream >> command; //fetch first word of the value
+
+			while (input_stream) //go all the way to the end
+			{
+				option_value += command + " ";
+				input_stream >> command;
+			}
+
+			option_value = option_value.substr(0, option_value.size() - 1); //remove trailing space
+
+			uci_options[option_index].val_string = option_value;
+			uci_options[option_index].val_float = stof(option_value);
+
+			//update the option!
+			if (option_name == "Hash") reallocate_tt((TT_INDEX)uci_options[option_index].val_float); //reallocate TT
+			printf("size %u\n", tt_size);
 		}
 		else if(command == "position")
 		{

@@ -1,10 +1,12 @@
 #include "tt.h"
 
 
-TT_ENTRY transpo_table[TT_SIZE]; //Transposition table
+TT_ENTRY *transpo_table; //Transposition table
 
 uint64_t prng_state = 0x12345678; //PRNG seed (not randomized, to give constant results and make debug easier)
 uint64_t zobrist_table[2048] = { 0 }; //NOTE: this Zobrist table is larger than it has to be (only 781 entries minimum)
+
+TT_INDEX tt_size = TT_SIZE;
 
 uint64_t pseudo_rng()
 {
@@ -15,11 +17,24 @@ uint64_t pseudo_rng()
     return prng_state;
 }
 
-void init_zobrist()
+void init_tt()
 {
     //Initialize Zobrist table: fill up with random, except for first 8x8x2 board (empty squares)
     for (uint16_t i = 128; i < 2048; i++)
         zobrist_table[i] = pseudo_rng();
+
+    //Allocate TT (WARNING: do not call this function if TT is already allocated!)
+    transpo_table = (TT_ENTRY*)calloc((size_t)tt_size, sizeof(TT_ENTRY));
+}
+
+void reallocate_tt(TT_INDEX size) //size in MB
+{
+    //Free previous TT
+    free(transpo_table);
+
+    //Recalculate TT size and allocate new one (for some reason CppCheck complained about using realloc, because it would cause a memleak on failure)
+    tt_size = (size * 1048576) / sizeof(TT_ENTRY);
+    transpo_table = (TT_ENTRY*)calloc((size_t)tt_size, sizeof(TT_ENTRY));
 }
 
 void clear_tt()
