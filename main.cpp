@@ -7,8 +7,8 @@
 #include "tt.h"
 #include "time_manager.h"
 
-// #define __TEST_VERSION__
-// #define __TEST_NAME__ ""
+#define __TEST_VERSION__
+#define __TEST_NAME__ "ENHANCED ASPI"
 #define __ENGINE_VERSION__ "2.2-dev"
 
 
@@ -103,10 +103,12 @@ int main(int argc, char** argv)
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100;
 
-			search(board_stm, i < 5 ? 12 : 7, board_last_target, MATE_SCORE, -MATE_SCORE, //do higher depth search on first few fens, to account for potential high-depth search techniques
-				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
-				1, //don't allow NMP at the root, but allow it on subsequent plies
-				0, -half_move_clock);
+			// search(board_stm, i < 5 ? 12 : 7, board_last_target, MATE_SCORE, -MATE_SCORE, //do higher depth search on first few fens, to account for potential high-depth search techniques
+			// 	board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+			// 	1, //don't allow NMP at the root, but allow it on subsequent plies
+			// 	0, -half_move_clock);
+
+			search_root(-1, i < 5 ? 12 : 7);
 		}
 
 		clock_t end = clock();
@@ -362,7 +364,7 @@ int main(int argc, char** argv)
 
 			if(!time_ms) time_ms = alloc_time(engine_time, increment, movestogo); //time_ms has not been set by a movetime command, so we need to calculate it
 			// printf("time: %u\n", time_ms);
-			search_root(time_ms);
+			search_root(time_ms, MAX_DEPTH);
 		}
 		else if (command  == "perft")
 		{

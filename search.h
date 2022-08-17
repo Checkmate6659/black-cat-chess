@@ -20,7 +20,8 @@
 #define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
 //TEMP DISABLED: max aspi margin; aspi multiplier (Simple Aspiration)
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 5/4 + 20 //multiply corresponding margin by this each time we fail (first number can be integer or A/B rational number, with A and B integers; add constant afterwards)
+#define ASPI_MULTIPLIER 2 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_CONSTANT 5 //add this to the margin each time we fail
 
 #define RFP_MAX_DEPTH 8 //Max depth when RFP is active
 #define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
@@ -56,6 +57,6 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 bool nullmove_safe(uint8_t stm);
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply);
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta);
-void search_root(uint32_t time_ms);
+void search_root(uint32_t time_ms, uint8_t fixed_depth);
 
 #endif
