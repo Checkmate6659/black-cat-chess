@@ -20,8 +20,8 @@
 #define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
 //TEMP DISABLED: max aspi margin; aspi multiplier (Simple Aspiration)
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 2 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
-#define ASPI_CONSTANT 5 //add this to the margin each time we fail
+#define ASPI_MULTIPLIER 3 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_CONSTANT 10 //add this to the margin each time we fail
 
 #define RFP_MAX_DEPTH 8 //Max depth when RFP is active
 #define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
