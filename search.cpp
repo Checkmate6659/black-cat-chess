@@ -440,7 +440,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
-	int16_t eval;// = qsearch(board_stm, alpha, beta); //first guess at the score is just qsearch = depth 0
+	int16_t eval = qsearch(board_stm, alpha, beta); //first guess at the score is just qsearch = depth 0
 	
 	MOVE best_move;
 
