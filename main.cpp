@@ -29,7 +29,7 @@ OPTION uci_options[] = {
 #ifdef TUNING_MODE
 	{"AspiMargin", "spin", 1, 100, (double)aspi_margin, ""},
 	{"MaxAspiMargin", "spin", 2, 10000, (double)max_aspi_margin, ""},
-	{"AspiMultiplier", "spin", 1, 16, (double)aspi_mul, ""},
+	{"AspiMultiplier", "spin", 100, 400, (double)aspi_mul, ""}, //x100
 	{"AspiConstant", "spin", 1, 1000, (double)aspi_constant, ""},
 	{"RFPMaxDepth", "spin", 1, 100, (double)rfp_max_depth, ""},
 	{"RFPMargin", "spin", 0, 1000, (double)rfp_margin, ""},
@@ -40,6 +40,8 @@ OPTION uci_options[] = {
 	{"NullMoveReductionDepth", "spin", 1, 100, (double)nmp_depth, ""},
 	{"NullMoveReductionMin", "spin", 0, 100, (double)nmp_evalmin, ""},
 	{"NullMoveReductionDiv", "spin", 1, 10000, (double)nmp_evaldiv, ""},
+	{"LMRConst", "spin", 0, 20000, (double)lmr_const, ""}, //x10000
+	{"LMRMul", "spin", 0, 20000, (double)lmr_mul, ""}, //x10000
 #endif
 };
 

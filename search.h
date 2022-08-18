@@ -23,10 +23,11 @@
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
 //Aspiration windows
-extern int aspi_margin, max_aspi_margin, aspi_mul, aspi_constant;
+extern int aspi_margin, max_aspi_margin, aspi_constant;
+extern float aspi_mul;
 #define ASPI_MARGIN aspi_margin //Starting aspiration window margin (30cp)
 #define MAX_ASPI_MARGIN max_aspi_margin //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER aspi_mul //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_MULTIPLIER (aspi_mul/100) //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
 #define ASPI_CONSTANT aspi_constant //add this to the margin each time we fail
 
 extern int rfp_max_depth, rfp_margin, rfp_impr;
@@ -49,6 +50,10 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 #define NULL_MOVE_REDUCTION_DEPTH nmp_depth
 #define NULL_MOVE_REDUCTION_MIN nmp_evalmin
 #define NULL_MOVE_REDUCTION_DIV nmp_evaldiv
+
+extern float lmr_const, lmr_mul;
+#define LMR_CONST (lmr_const/10000) //LMR constant (Ethereal: 0.75)
+#define LMR_MUL (lmr_mul/10000) //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result)
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
@@ -58,14 +63,14 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 
 #define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 3 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_MULTIPLIER 5/4 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
 #define ASPI_CONSTANT 10 //add this to the margin each time we fail
 
 #define RFP_MAX_DEPTH 8 //Max depth when RFP is active
 #define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
 #define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
-#define TT_FAIL_REDUCTION_MINDEPTH 5 //Min depth to reduce PV-nodes where probing was unsuccessful
+#define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
 //SEE activation (has yielded me bad results so far because of significant slowness)
 #define SEE_SEARCH false //activate during main search
@@ -77,6 +82,9 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 #define NULL_MOVE_REDUCTION_DEPTH 6
 #define NULL_MOVE_REDUCTION_MIN 3
 #define NULL_MOVE_REDUCTION_DIV 200
+
+#define LMR_CONST 0.75 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 1/2.25 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)

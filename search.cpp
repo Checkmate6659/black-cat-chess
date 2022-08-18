@@ -1,11 +1,13 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
 #ifdef TUNING_MODE
-int aspi_margin = 30, max_aspi_margin = 2000, aspi_mul = 3, aspi_constant = 10;
+int aspi_margin = 30, max_aspi_margin = 2000, aspi_constant = 10;
+float aspi_mul = 125; //x100
 int rfp_max_depth = 8, rfp_margin = 150, rfp_impr = 0;
-int iid_reduction_d = 5;
+int iid_reduction_d = 3;
 int dprune = 300;
 int nmp_const = 2, nmp_depth = 6, nmp_evalmin = 3, nmp_evaldiv = 200;
+float lmr_const = 7500, lmr_mul = 4444; //x10000
 #endif
 
 
@@ -83,7 +85,8 @@ void init_lmr() //Initialize the late move reduction table
 				// lmr_table[ply][move] = (uint8_t)(log((double)ply - LMR_MINDEPTH)*log((double)move - LMR_THRESHOLD)); //RELATIVE log reduction
 
 				//Ethereal LMR
-				lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
+				// lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
+				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL); //Ethereal log reduction
 			}
 		}
 }
