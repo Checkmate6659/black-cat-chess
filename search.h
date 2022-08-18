@@ -58,7 +58,7 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 
 #define ASPI_MARGIN 31 //Starting aspiration window margin (30cp)
 #define MAX_ASPI_MARGIN 2327 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 1 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_MULTIPLIER 5/4 //multiply corresponding margin by this each time we fail (can be integer or rational A/B) NOTE: tuning gave a multiplier of 1, which gives a bunch of nodes
 #define ASPI_CONSTANT 4 //add this to the margin each time we fail
 
 #define RFP_MAX_DEPTH 9 //Max depth when RFP is active
