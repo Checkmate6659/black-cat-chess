@@ -8,14 +8,14 @@
 #include "order.h"
 #include "posix.h"
 
-// #define TUNING_MODE
+#define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
 #define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
-#ifdef TUNING_MODE
+// #ifdef TUNING_MODE
 
 //Not tuning these immediately
 #define STALEMATE 0 //Stalemate: side to move has no legal moves

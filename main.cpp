@@ -250,19 +250,23 @@ int main(int argc, char** argv)
 			if (option_name == "Hash") reallocate_tt((TT_INDEX)uci_options[option_index].val_float); //reallocate TT
 
 #ifdef TUNING_MODE
-			aspi_margin = uci_options[0].val_float;
-			max_aspi_margin = uci_options[1].val_float;
-			aspi_mul = uci_options[2].val_float;
-			aspi_constant = uci_options[3].val_float;
-			rfp_max_depth = uci_options[4].val_float;
-			rfp_margin = uci_options[5].val_float;
-			rfp_impr = uci_options[6].val_float;
-			iid_reduction_d = uci_options[7].val_float;
-			dprune = uci_options[8].val_float;
-			nmp_const = uci_options[9].val_float;
-			nmp_depth = uci_options[10].val_float;
-			nmp_evalmin = uci_options[11].val_float;
-			nmp_evaldiv = uci_options[12].val_float;
+			aspi_margin = uci_options[1].val_float;
+			max_aspi_margin = uci_options[2].val_float;
+			aspi_mul = uci_options[3].val_float;
+			aspi_constant = uci_options[4].val_float;
+			rfp_max_depth = uci_options[5].val_float;
+			rfp_margin = uci_options[6].val_float;
+			rfp_impr = uci_options[7].val_float;
+			iid_reduction_d = uci_options[8].val_float;
+			dprune = uci_options[9].val_float;
+			nmp_const = uci_options[10].val_float;
+			nmp_depth = uci_options[11].val_float;
+			nmp_evalmin = uci_options[12].val_float;
+			nmp_evaldiv = uci_options[13].val_float;
+			lmr_const = uci_options[14].val_float;
+			lmr_mul = uci_options[15].val_float;
+
+			init_lmr();
 #endif
 		}
 		else if(command == "position")
