@@ -1,11 +1,13 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
 #ifdef TUNING_MODE
-int aspi_margin = 30, max_aspi_margin = 2000, aspi_mul = 3, aspi_constant = 10;
-int rfp_max_depth = 8, rfp_margin = 150, rfp_impr = 0;
-int iid_reduction_d = 5;
-int dprune = 300;
-int nmp_const = 2, nmp_depth = 6, nmp_evalmin = 3, nmp_evaldiv = 200;
+//For some reason, SPSA gave 1 for aspi_mul! Although 2 seems much more realistic, and even gives less nodes in bench; fail soft may be the reason why?
+//TODO: tune LMR and try using a float/double for aspi_mul (it can be easily made into a rational)
+int aspi_margin = 31, max_aspi_margin = 2327, aspi_mul = 1, aspi_constant = 4;
+int rfp_max_depth = 9, rfp_margin = 155, rfp_impr = 4;
+int iid_reduction_d = 3;
+int dprune = 290;
+int nmp_const = 1, nmp_depth = 7, nmp_evalmin = 7, nmp_evaldiv = 214;
 #endif
 
 

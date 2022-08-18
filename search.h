@@ -56,27 +56,27 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-#define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
-#define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 3 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
-#define ASPI_CONSTANT 10 //add this to the margin each time we fail
+#define ASPI_MARGIN 31 //Starting aspiration window margin (30cp)
+#define MAX_ASPI_MARGIN 2327 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
+#define ASPI_MULTIPLIER 1 //multiply corresponding margin by this each time we fail (can be integer or rational A/B)
+#define ASPI_CONSTANT 4 //add this to the margin each time we fail
 
-#define RFP_MAX_DEPTH 8 //Max depth when RFP is active
-#define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
+#define RFP_MAX_DEPTH 9 //Max depth when RFP is active
+#define RFP_MARGIN 155 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 4 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
-#define TT_FAIL_REDUCTION_MINDEPTH 5 //Min depth to reduce PV-nodes where probing was unsuccessful
+#define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
 //SEE activation (has yielded me bad results so far because of significant slowness)
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch
 
-#define DELTA 300 //delta pruning threshold
+#define DELTA 290 //delta pruning threshold
 
-#define NULL_MOVE_REDUCTION_CONST 2
-#define NULL_MOVE_REDUCTION_DEPTH 6
-#define NULL_MOVE_REDUCTION_MIN 3
-#define NULL_MOVE_REDUCTION_DIV 200
+#define NULL_MOVE_REDUCTION_CONST 1
+#define NULL_MOVE_REDUCTION_DEPTH 7
+#define NULL_MOVE_REDUCTION_MIN 7
+#define NULL_MOVE_REDUCTION_DIV 214
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)
