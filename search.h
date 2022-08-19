@@ -91,6 +91,10 @@ extern uint32_t lmr_history_threshold;
 #define LMR_MUL 0.0563 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
 
 #define LMR_HISTORY_THRESHOLD 6434
+
+#define HLP_MOVECOUNT 4
+#define HLP_REDUCE 0
+#define HLP_PRUNE 0
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)

@@ -65,14 +65,14 @@ void order_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, ui
                 curmove.score = SCORE_QUIET;
                 curmove.score += history[PSQ_INDEX(curmove)];
 
-                //penalize leaving pieces attacked by enemy pawns
-                uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)
-                uint8_t pawn_rank_square = curmove.tgt + (stm << 2) - 48;
+                //penalize leaving pieces attacked by enemy pawns (TODO: try tuning this! or scrapping the idea)
+                // uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)
+                // uint8_t pawn_rank_square = curmove.tgt + (stm << 2) - 48;
 
-                if (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) //if the target is attacked by a pawn
-                    curmove.score -= PAWN_ATTACK_PENALTY; //penalize the move
-                else if (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) //same on the other side
-                    curmove.score -= PAWN_ATTACK_PENALTY;
+                // if (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) //if the target is attacked by a pawn
+                //     curmove.score -= PAWN_ATTACK_PENALTY; //penalize the move
+                // else if (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) //same on the other side
+                //     curmove.score -= PAWN_ATTACK_PENALTY;
 
                 // curmove.score -= (!((pawn_rank_square - 1) & OFFBOARD) && (board[pawn_rank_square - 1] & PTYPE) == enemy_pawn) * PAWN_ATTACK_PENALTY;
                 // curmove.score -= (!((pawn_rank_square + 1) & OFFBOARD) && (board[pawn_rank_square + 1] & PTYPE) == enemy_pawn) * PAWN_ATTACK_PENALTY;
