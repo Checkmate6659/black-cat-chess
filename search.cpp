@@ -1,13 +1,19 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
 #ifdef TUNING_MODE
-int aspi_margin = 43, max_aspi_margin = 2000, aspi_constant = 110;
-float aspi_mul = 132; //x100
-int rfp_max_depth = 18, rfp_margin = 158, rfp_impr = 138;
+int aspi_margin = 22, max_aspi_margin = 2000, aspi_constant = 39;
+float aspi_mul = 168; //x100
+int rfp_max_depth = 17, rfp_margin = 304, rfp_impr = 146;
 int iid_reduction_d = 3;
-int dprune = 1068;
-int nmp_const = 4, nmp_depth = 11, nmp_evalmin = 28, nmp_evaldiv = 453;
-float lmr_const = 576, lmr_mul = 3520; //x10000
+int dprune = 2069;
+int nmp_const = 3, nmp_depth = 16, nmp_evalmin = 44, nmp_evaldiv = 509;
+float lmr_const = 12852, lmr_mul = 563; //x10000
+//TODO: implement these in non-tuning mode too!
+bool lmr_do_pv = false;
+bool lmr_do_impr = true;
+bool lmr_do_chk_kmove = false;
+bool lmr_do_killer = false;
+uint32_t lmr_history_threshold = 6434;
 #endif
 
 
@@ -295,9 +301,20 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		//LMR implementation close to Ethereal (TODO: tune)
 		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
-		lmr += (beta - alpha == 1) + !improving; //reduce less for PV and/or improving (LMR is a fail-low/loss-seeking heuristic)
-		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
-		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+
+#ifdef TUNING_MODE
+		if(lmr_do_pv) lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		if(lmr_do_impr) lmr += !improving; //reduce less for improving
+		if(lmr_do_chk_kmove) lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		if(lmr_do_killer) lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+#else
+		// lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		lmr += !improving; //reduce less for improving
+		// lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		// lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+#endif
+		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
+
 		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
 
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves

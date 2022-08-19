@@ -42,6 +42,11 @@ OPTION uci_options[] = {
 	{"NullMoveReductionDiv", "spin", 1, 10000, (double)nmp_evaldiv, ""},
 	{"LMRConst", "spin", 0, 20000, (double)lmr_const, ""}, //x10000
 	{"LMRMul", "spin", 0, 20000, (double)lmr_mul, ""}, //x10000
+	{"LMR_PV", "spin", 0, 1, (double)lmr_do_pv, ""}, //bool; hardcoded
+	{"LMR_impr", "spin", 0, 1, (double)lmr_do_impr, ""}, //bool; hardcoded
+	{"LMR_kmove", "spin", 0, 1, (double)lmr_do_chk_kmove, ""}, //bool; hardcoded
+	{"LMR_killer", "spin", 0, 1, (double)lmr_do_killer, ""}, //bool; hardcoded
+	{"LMRHist", "spin", 0, 999999, (double)lmr_history_threshold, ""}, //history score
 #endif
 };
 
@@ -265,6 +270,11 @@ int main(int argc, char** argv)
 			nmp_evaldiv = uci_options[13].val_float;
 			lmr_const = uci_options[14].val_float;
 			lmr_mul = uci_options[15].val_float;
+			lmr_do_pv = uci_options[16].val_float;
+			lmr_do_impr = uci_options[17].val_float;
+			lmr_do_chk_kmove = uci_options[18].val_float;
+			lmr_do_killer = uci_options[19].val_float;
+			lmr_history_threshold = uci_options[20].val_float;
 
 			init_lmr();
 #endif

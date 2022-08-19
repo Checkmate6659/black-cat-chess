@@ -54,6 +54,10 @@ extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 extern float lmr_const, lmr_mul;
 #define LMR_CONST (lmr_const/10000) //LMR constant (Ethereal: 0.75)
 #define LMR_MUL (lmr_mul/10000) //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result)
+
+extern bool lmr_do_pv, lmr_do_impr, lmr_do_chk_kmove, lmr_do_killer;
+extern uint32_t lmr_history_threshold;
+#define LMR_HISTORY_THRESHOLD lmr_history_threshold
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
@@ -61,14 +65,14 @@ extern float lmr_const, lmr_mul;
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-#define ASPI_MARGIN 43 //Starting aspiration window margin (43cp)
+#define ASPI_MARGIN 22 //Starting aspiration window margin
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 1.3154 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
-#define ASPI_CONSTANT 110 //add this to the margin each time we fail
+#define ASPI_MULTIPLIER 1.68 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
+#define ASPI_CONSTANT 39 //add this to the margin each time we fail
 
-#define RFP_MAX_DEPTH 18 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 158 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 138 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
+#define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
+#define RFP_MARGIN 304 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 146 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
@@ -76,15 +80,17 @@ extern float lmr_const, lmr_mul;
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch
 
-#define DELTA 1068 //delta pruning threshold (TODO: test without any delta pruning)
+#define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 
-#define NULL_MOVE_REDUCTION_CONST 4
-#define NULL_MOVE_REDUCTION_DEPTH 11
-#define NULL_MOVE_REDUCTION_MIN 28 //TODO: test uncapped
-#define NULL_MOVE_REDUCTION_DIV 453
+#define NULL_MOVE_REDUCTION_CONST 3
+#define NULL_MOVE_REDUCTION_DEPTH 16
+#define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
+#define NULL_MOVE_REDUCTION_DIV 509
 
-#define LMR_CONST 0.0576 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 0.352 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_CONST 1.2852 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0.0563 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+
+#define LMR_HISTORY_THRESHOLD 6434
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)
