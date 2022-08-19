@@ -61,14 +61,14 @@ extern float lmr_const, lmr_mul;
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-#define ASPI_MARGIN 30 //Starting aspiration window margin (30cp)
+#define ASPI_MARGIN 43 //Starting aspiration window margin (43cp)
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 5/4 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
-#define ASPI_CONSTANT 10 //add this to the margin each time we fail
+#define ASPI_MULTIPLIER 1.3154 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
+#define ASPI_CONSTANT 110 //add this to the margin each time we fail
 
-#define RFP_MAX_DEPTH 8 //Max depth when RFP is active
-#define RFP_MARGIN 150 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 0 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
+#define RFP_MAX_DEPTH 18 //Max depth when RFP is active (maybe it should be uncapped?)
+#define RFP_MARGIN 158 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 138 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
@@ -76,15 +76,15 @@ extern float lmr_const, lmr_mul;
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch
 
-#define DELTA 300 //delta pruning threshold
+#define DELTA 1068 //delta pruning threshold (TODO: test without any delta pruning)
 
-#define NULL_MOVE_REDUCTION_CONST 2
-#define NULL_MOVE_REDUCTION_DEPTH 6
-#define NULL_MOVE_REDUCTION_MIN 3
-#define NULL_MOVE_REDUCTION_DIV 200
+#define NULL_MOVE_REDUCTION_CONST 4
+#define NULL_MOVE_REDUCTION_DEPTH 11
+#define NULL_MOVE_REDUCTION_MIN 28 //TODO: test uncapped
+#define NULL_MOVE_REDUCTION_DIV 453
 
-#define LMR_CONST 0.75 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 1/2.25 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_CONST 0.0576 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0.352 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)

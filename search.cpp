@@ -1,13 +1,13 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
 #ifdef TUNING_MODE
-int aspi_margin = 30, max_aspi_margin = 2000, aspi_constant = 10;
-float aspi_mul = 125; //x100
-int rfp_max_depth = 8, rfp_margin = 150, rfp_impr = 0;
+int aspi_margin = 43, max_aspi_margin = 2000, aspi_constant = 110;
+float aspi_mul = 132; //x100
+int rfp_max_depth = 18, rfp_margin = 158, rfp_impr = 138;
 int iid_reduction_d = 3;
-int dprune = 300;
-int nmp_const = 2, nmp_depth = 6, nmp_evalmin = 3, nmp_evaldiv = 200;
-float lmr_const = 7500, lmr_mul = 4444; //x10000
+int dprune = 1068;
+int nmp_const = 4, nmp_depth = 11, nmp_evalmin = 28, nmp_evaldiv = 453;
+float lmr_const = 576, lmr_mul = 3520; //x10000
 #endif
 
 
