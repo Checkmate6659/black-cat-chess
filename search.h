@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-// #define TUNING_MODE
+#define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -58,6 +58,18 @@ extern float lmr_const, lmr_mul;
 extern bool lmr_do_pv, lmr_do_impr, lmr_do_chk_kmove, lmr_do_killer;
 extern uint32_t lmr_history_threshold;
 #define LMR_HISTORY_THRESHOLD lmr_history_threshold
+
+extern float lmr_sqrt_mul, lmr_dist_mul, lmr_depth_mul;
+#define LMR_SQRT_MUL (lmr_sqrt_mul/10000)
+#define LMR_DIST_MUL (lmr_dist_mul/10000)
+#define LMR_DEPTH_MUL (lmr_depth_mul/10000)
+
+extern bool hlp_do_improving;
+extern uint8_t hlp_movecount;
+extern uint32_t hlp_reduce, hlp_prune;
+#define HLP_MOVECOUNT hlp_movecount
+#define HLP_REDUCE hlp_reduce
+#define HLP_PRUNE hlp_prune
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)

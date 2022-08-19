@@ -8,14 +8,21 @@ int iid_reduction_d = 3;
 int dprune = 2069;
 int nmp_const = 3, nmp_depth = 16, nmp_evalmin = 44, nmp_evaldiv = 509;
 float lmr_const = 12852, lmr_mul = 563; //x10000
+
 //TODO: implement these in non-tuning mode too!
 bool lmr_do_pv = false;
 bool lmr_do_impr = true;
 bool lmr_do_chk_kmove = false;
 bool lmr_do_killer = false;
 uint32_t lmr_history_threshold = 6434;
-#endif
 
+//Extra LMR parameters, for better LMR
+float lmr_sqrt_mul = 0, lmr_dist_mul = 0, lmr_depth_mul = 0;
+
+bool hlp_do_improving = false; //do history leaf pruning on improving nodes
+uint8_t hlp_movecount = 4; //move count from which we can do it
+uint32_t hlp_reduce = 0, hlp_prune = 0;
+#endif
 
 
 clock_t search_end_time = 0;
@@ -92,7 +99,10 @@ void init_lmr() //Initialize the late move reduction table
 
 				//Ethereal LMR
 				// lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
-				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL); //Ethereal log reduction
+				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL); //Derived version
+
+				//Tunable LMR
+				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL + (sqrt((double)depth - 1) + sqrt((double)move - 1))*LMR_SQRT_MUL + sqrt(depth*depth + move*move)*LMR_DIST_MUL + depth*LMR_DEPTH_MUL); //Max-tunable LMR
 			}
 		}
 }
@@ -318,7 +328,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//history leaf pruning/reduction
 		if (beta - alpha == 1 && !incheck && legal_move_count >= HLP_MOVECOUNT //make sure its not a PV node, we're not in check, and a move has been found
 #ifdef TUNING_MODE
-		&& (!improving || !hlp_do_improving)
+		&& (!improving || hlp_do_improving)
 #else
 		&& !improving
 #endif

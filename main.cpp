@@ -47,6 +47,13 @@ OPTION uci_options[] = {
 	{"LMR_kmove", "spin", 0, 1, (double)lmr_do_chk_kmove, ""}, //bool; hardcoded
 	{"LMR_killer", "spin", 0, 1, (double)lmr_do_killer, ""}, //bool; hardcoded
 	{"LMRHist", "spin", 0, 999999, (double)lmr_history_threshold, ""}, //history score
+	{"LMRSqrtMul", "spin", 0, 20000, (double)lmr_sqrt_mul, ""}, //x10000
+	{"LMRDistMul", "spin", 0, 20000, (double)lmr_dist_mul, ""}, //x10000
+	{"LMRDepthMul", "spin", 0, 20000, (double)lmr_depth_mul, ""}, //x10000
+	{"HLPDoImproving", "spin", 0, 1, (double)hlp_do_improving, ""},
+	{"HLPMovecount", "spin", 1, 100, (double)hlp_movecount, ""},
+	{"HLPReduce", "spin", 0, 999999, (double)hlp_reduce, ""}, //history score
+	{"HLPPrune", "spin", 0, 999999, (double)hlp_prune, ""}, //history score
 #endif
 };
 
@@ -275,6 +282,13 @@ int main(int argc, char** argv)
 			lmr_do_chk_kmove = uci_options[18].val_float;
 			lmr_do_killer = uci_options[19].val_float;
 			lmr_history_threshold = uci_options[20].val_float;
+			lmr_sqrt_mul = uci_options[21].val_float;
+			lmr_dist_mul = uci_options[22].val_float;
+			lmr_depth_mul = uci_options[23].val_float;
+			hlp_do_improving = uci_options[24].val_float;
+			hlp_movecount = uci_options[25].val_float;
+			hlp_reduce = uci_options[26].val_float;
+			hlp_prune = uci_options[27].val_float;
 
 			init_lmr();
 #endif
