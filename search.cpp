@@ -175,7 +175,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	// key = board_hash(stm, last_target); //DEBUG: not give a shit to whatever there was before, just use the board_hash function
 
 	uint16_t hash_move = 0;
-	TT_ENTRY entry = get_entry(key); //Try to get a TT entry
+	TT_ENTRY entry = get_entry(key, ply); //Try to get a TT entry
 
 	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
 	if (entry.flag) //TT hit
@@ -266,7 +266,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
 
-			if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
+			// if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
 			if (null_move_val >= beta) //Null move beat beta
 				// return beta; //fail high, but hard
@@ -364,11 +364,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
-			if (panic) //check if we ran out of time
-			{
-				unmake_move(stm, curmove, res); //we have to unmake the moves!
-				return 0;
-			}
+			// if (panic) //check if we ran out of time
+			// {
+			// 	unmake_move(stm, curmove, res); //we have to unmake the moves!
+			// 	return 0;
+			// }
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
@@ -400,10 +400,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 				if (alpha >= beta) //beta cutoff
 				{
+					repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry); set BEFORE checking panic!
+
 					if (panic) return 0; //should NOT set TT entries when out of time!
 
 					//Handle hash entry: upper bound (fail high)
-					set_entry(key, HF_BETA, depth, beta, curmove);
+					set_entry(key, HF_BETA, depth, beta, curmove, ply);
 
 					//Killer move: not a capture nor a promotion
 					if (curmove.flags < F_CAPT)
@@ -416,7 +418,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 						}
 					}
 
-					repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry)
 					// return beta; //FAIL HARD
 					return eval;  //FAIL SOFT
 				}
@@ -440,9 +441,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha)
-		set_entry(key, HF_EXACT, depth, alpha, best_move); //exact score
+		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
 	else
-		set_entry(key, HF_ALPHA, depth, alpha, best_move); //lower bound (fail low)
+		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
 	return best_score; //FAIL SOFT

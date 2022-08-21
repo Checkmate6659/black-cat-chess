@@ -50,7 +50,7 @@ uint64_t board_hash(uint8_t stm, uint8_t last_target); //DEBUG: returns a hash o
 
 
 //Get a TT entry (if at or above required depth)
-inline TT_ENTRY get_entry(uint64_t key)
+inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % tt_size;
@@ -61,14 +61,21 @@ inline TT_ENTRY get_entry(uint64_t key)
     //     if (entry.eval %5 != 0 && !IS_MATE(entry.eval)) printf("BAD EVAL %d\n", entry.eval);
 
     if (entry.key == key && entry.flag) //A valid entry with the right key
-        return entry; //Hit!
-        // return TT_ENTRY { entry.key, entry.flag, entry.depth, entry.eval, entry.move };
+        {
+            //undo mate score storage stuff
+            if (entry.eval < MATE_SCORE + 256) //getting mated
+                entry.eval += ply;
+            else if (entry.eval > -MATE_SCORE - 256) //mating
+                entry.eval -= ply;
+
+            return entry; //Hit!
+        }
 
     return TT_ENTRY { 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)
 }
 
 //Set a TT entry (if improving depth)
-inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move)
+inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move, uint8_t ply)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % tt_size;
@@ -83,9 +90,12 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     //less precise flag (exact < upperbound < lowerbound)
     if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
         return;
-    
-    if (IS_MATE(eval)) //can't store mates!
-        return;
+
+    //Storage of mate scores
+    if (eval < MATE_SCORE + 256) //getting mated
+        eval -= ply;
+    else if (eval > -MATE_SCORE - 256) //mating
+        eval += ply;
 
     transpo_table[tt_index].key = key;
     transpo_table[tt_index].flag = flag;
