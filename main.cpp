@@ -54,6 +54,7 @@ OPTION uci_options[] = {
 	{"HLPMovecount", "spin", 1, 100, (double)hlp_movecount, ""},
 	{"HLPReduce", "spin", 0, 999999, (double)hlp_reduce, ""}, //history score
 	{"HLPPrune", "spin", 0, 999999, (double)hlp_prune, ""}, //history score
+	{"CheckExtensionMinDepth", "spin", 1, 100, (double)chkext_depth, ""},
 #endif
 };
 
@@ -289,6 +290,7 @@ int main(int argc, char** argv)
 			hlp_movecount = uci_options[25].val_float;
 			hlp_reduce = uci_options[26].val_float;
 			hlp_prune = uci_options[27].val_float;
+			chkext_depth = uci_options[28].val_float;
 
 			init_lmr();
 #endif

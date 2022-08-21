@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-#define TUNING_MODE
+// #define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -43,12 +43,12 @@ extern int iid_reduction_d;
 #define SEE_QSEARCH false //activate during qsearch
 
 extern int dprune;
-#define DELTA dprune //delta pruning threshold
+// #define DELTA dprune //delta pruning threshold
 
 extern int nmp_const, nmp_depth, nmp_evalmin, nmp_evaldiv;
 #define NULL_MOVE_REDUCTION_CONST nmp_const
 #define NULL_MOVE_REDUCTION_DEPTH nmp_depth
-#define NULL_MOVE_REDUCTION_MIN nmp_evalmin
+// #define NULL_MOVE_REDUCTION_MIN nmp_evalmin
 #define NULL_MOVE_REDUCTION_DIV nmp_evaldiv
 
 extern float lmr_const, lmr_mul;
@@ -70,6 +70,9 @@ extern uint32_t hlp_reduce, hlp_prune;
 #define HLP_MOVECOUNT hlp_movecount
 #define HLP_REDUCE hlp_reduce
 #define HLP_PRUNE hlp_prune
+
+extern uint8_t chkext_depth;
+#define CHKEXT_MINDEPTH chkext_depth
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
@@ -82,9 +85,9 @@ extern uint32_t hlp_reduce, hlp_prune;
 #define ASPI_MULTIPLIER 1.68 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
 #define ASPI_CONSTANT 39 //add this to the margin each time we fail
 
-#define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 304 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 146 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count (TEMP DISABLED)
+// #define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
+#define RFP_MARGIN 100 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 75 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
@@ -92,21 +95,26 @@ extern uint32_t hlp_reduce, hlp_prune;
 #define SEE_SEARCH false //activate during main search
 #define SEE_QSEARCH false //activate during qsearch
 
-#define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
+// #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 
 #define NULL_MOVE_REDUCTION_CONST 3
 #define NULL_MOVE_REDUCTION_DEPTH 16
-#define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
+// #define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
 #define NULL_MOVE_REDUCTION_DIV 509
 
-#define LMR_CONST 1.2852 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 0.0563 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_CONST 0.5512 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_SQRT_MUL 0.1262
+#define LMR_DIST_MUL 0.0882
+#define LMR_DEPTH_MUL 0
 
 #define LMR_HISTORY_THRESHOLD 6434
 
-#define HLP_MOVECOUNT 4
+#define HLP_MOVECOUNT 100 //HLP not gaining; retry tuning it with continuation history
 #define HLP_REDUCE 0
 #define HLP_PRUNE 0
+
+#define CHKEXT_MINDEPTH 6
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)

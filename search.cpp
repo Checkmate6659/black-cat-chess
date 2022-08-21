@@ -5,23 +5,25 @@ int aspi_margin = 22, max_aspi_margin = 2000, aspi_constant = 39;
 float aspi_mul = 168; //x100
 int rfp_max_depth = 17, rfp_margin = 304, rfp_impr = 146;
 int iid_reduction_d = 3;
-int dprune = 2069;
-int nmp_const = 3, nmp_depth = 16, nmp_evalmin = 44, nmp_evaldiv = 509;
-float lmr_const = 12852, lmr_mul = 563; //x10000
+int dprune = 2069; //DISABLED
+int nmp_const = 3, nmp_depth = 16, nmp_evalmin = 44, nmp_evaldiv = 509; //evalmin DISABLED
+float lmr_const = 5512, lmr_mul = 0; //x10000; actually the lmr_mul is for log(d)*log(m)
 
-//TODO: implement these in non-tuning mode too!
-bool lmr_do_pv = false;
+//TODO: do tests instead of tuning for bools, its not good to tune bools with spsa
+bool lmr_do_pv = true;
 bool lmr_do_impr = true;
 bool lmr_do_chk_kmove = false;
-bool lmr_do_killer = false;
+bool lmr_do_killer = true;
 uint32_t lmr_history_threshold = 6434;
 
 //Extra LMR parameters, for better LMR
-float lmr_sqrt_mul = 0, lmr_dist_mul = 0, lmr_depth_mul = 0;
+float lmr_sqrt_mul = 1262, lmr_dist_mul = 882, lmr_depth_mul = 0; //all x10000
 
-bool hlp_do_improving = false; //do history leaf pruning on improving nodes
-uint8_t hlp_movecount = 4; //move count from which we can do it
-uint32_t hlp_reduce = 0, hlp_prune = 0;
+bool hlp_do_improving = true; //do history leaf pruning on improving nodes
+uint8_t hlp_movecount = 6; //move count from which we can do it
+uint32_t hlp_reduce = 5000, hlp_prune = 2500;
+
+uint8_t chkext_depth = 6; //check extension minimum depth
 #endif
 
 
@@ -239,10 +241,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
 
-	if (beta - alpha == 1) //Non-PV node
+	if (incheck && depth > CHKEXT_MINDEPTH) depth++; //check extension
+	else if (beta - alpha == 1) //Non-PV node, not extended in this node (TODO: not extended in entire line)
 	{
 		//Reverse futility pruning/static null move pruning (TODO: try with !incheck)
-		if (depth <= RFP_MAX_DEPTH
+		if (/* depth <= RFP_MAX_DEPTH */ true											//RFP max depth shown to be useless! uncapped RFP
 		&& !IS_MATE(beta) //don't rfp when beta is a mate value
 		&& static_eval - RFP_MARGIN * depth - RFP_IMPR * improving >= beta) //sufficient margin
 		// && static_eval - RFP_MARGIN * depth >= beta) //basic impl (test this first!)
@@ -253,7 +256,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		uint8_t reduction;
 		// reduction = NULL_MOVE_REDUCTION_CONST; //const reduction
 		// reduction = std::min((static_eval - beta) / 147, 5) + depth/3 + NULL_MOVE_REDUCTION_CONST; //SF-ish (uses const 4)
-		reduction = NULL_MOVE_REDUCTION_CONST + depth/NULL_MOVE_REDUCTION_DEPTH + std::min(NULL_MOVE_REDUCTION_MIN, (static_eval - beta) / NULL_MOVE_REDUCTION_DIV); //Ethereal-ish (uses const 4)
+
+		//reduction = NULL_MOVE_REDUCTION_CONST + depth/NULL_MOVE_REDUCTION_DEPTH + std::min(NULL_MOVE_REDUCTION_MIN, (static_eval - beta) / NULL_MOVE_REDUCTION_DIV); //Ethereal-ish (uses const 4)
+		reduction = NULL_MOVE_REDUCTION_CONST + depth/NULL_MOVE_REDUCTION_DEPTH + (static_eval - beta) / NULL_MOVE_REDUCTION_DIV; //uncapping eval-beta param probably good idea
 
 		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
 		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
@@ -312,16 +317,16 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		//LMR implementation close to Ethereal (TODO: tune)
 		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
 
-#ifdef TUNING_MODE
+#ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
 		if(lmr_do_pv) lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		if(lmr_do_impr) lmr += !improving; //reduce less for improving
 		if(lmr_do_chk_kmove) lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		if(lmr_do_killer) lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
-#else
-		// lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+#else //king moves in check, very suspicious
+		lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		lmr += !improving; //reduce less for improving
-		// lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
-		// lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #endif
 		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
@@ -450,8 +455,9 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	if (stand_pat >= beta)
 		return beta;
 	else alpha = std::max(alpha, stand_pat);
-	if (stand_pat <= alpha - DELTA) //delta pruning
-		return alpha;
+	//tuning revealed delta pruning probably BAD!
+	// if (stand_pat <= alpha - DELTA) //delta pruning
+	// 	return alpha;
 
 
 	MLIST mlist;
