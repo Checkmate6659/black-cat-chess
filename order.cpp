@@ -83,16 +83,16 @@ void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, b
             }
         }
 
-        mlist->moves[i] = curmove;
+        // mlist->moves[i] = curmove;
 
         //insert move into sorted list
-        // int j = i;
-        // while (j > 0 && mlist->moves[j - 1].score > curmove.score)
-        // {
-        //     mlist->moves[j] = mlist->moves[j - 1];
-        //     j--;
-        // }
-        // mlist->moves[j] = curmove;
+        int j = i;
+        while (j > 0 && mlist->moves[j - 1].score > curmove.score)
+        {
+            mlist->moves[j] = mlist->moves[j - 1];
+            j--;
+        }
+        mlist->moves[j] = curmove;
     }
 }
 
