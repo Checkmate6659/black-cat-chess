@@ -287,15 +287,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	order_moves(&mlist, stm, hash_move, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, stm, hash_move, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
 	while (mlist.count) //iterate through it backwards
 	{
-		mlist.count--;
-
-		MOVE curmove = mlist.moves[mlist.count];
+		// MOVE curmove = mlist.moves[mlist.count];
+		MOVE curmove = pick_move(&mlist);
 		uint64_t curmove_hash = move_hash(stm, curmove);
 
 		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;
@@ -465,13 +464,12 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	order_moves(&mlist, stm, 0, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, stm, 0, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
-		mlist.count--;
-
-		MOVE curmove = mlist.moves[mlist.count];
+		// MOVE curmove = mlist.moves[mlist.count];
+		MOVE curmove =  pick_move(&mlist);
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!

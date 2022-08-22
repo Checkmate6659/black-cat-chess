@@ -10,10 +10,11 @@ void clear_history()
     for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] = 0;
 }
 
-void order_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, uint8_t ply)
+void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, uint8_t ply)
 {
-    //add scores to each move, and sort the moves by score
+    //add scores to each move, and sort the moves by score (TODO: no longer do that, but pick the moves in the move loop)
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
+    //TODO: fix switching to selection sort for move picker
     for (int i = 0; i < mlist->count; i++)
     {
         MOVE curmove = mlist->moves[i];
@@ -30,7 +31,7 @@ void order_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, ui
             curmove.score = SCORE_CAPT;
             if (use_see) //SEE
             {
-                curmove.score += see(stm, curmove.tgt);
+                curmove.score += see(stm, curmove.tgt); //Too slow!!!
             }
             else //MVV-LVA
             {
@@ -79,15 +80,41 @@ void order_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, ui
             }
         }
 
+        mlist->moves[i] = curmove;
+
         //insert move into sorted list
-        int j = i;
-        while (j > 0 && mlist->moves[j - 1].score > curmove.score)
-        {
-            mlist->moves[j] = mlist->moves[j - 1];
-            j--;
-        }
-        mlist->moves[j] = curmove;
+        // int j = i;
+        // while (j > 0 && mlist->moves[j - 1].score > curmove.score)
+        // {
+        //     mlist->moves[j] = mlist->moves[j - 1];
+        //     j--;
+        // }
+        // mlist->moves[j] = curmove;
     }
+}
+
+//BUG: function works if list sorted, but not if it isnt (which is the goal in the end)
+MOVE pick_move(MLIST *mlist)
+{
+    //pick the next move from the sorted list, which is the one with the highest score, and swap it with the element mlist->moves[mlist->count - 1]
+    uint8_t best_index = 0;
+    uint32_t best_score = 0;
+
+    for (uint8_t index = 0; index < mlist->count; index++)
+    {
+        if (mlist->moves[index].score >= best_score)
+        {
+            best_index = index;
+            best_score = mlist->moves[index].score;
+        }
+    }
+
+    //Do the "swap": no need to really swap, since mlist->moves[mlist->count - 1] isn't accessed in main search loop anyway and will be irrelevant afterwards
+    MOVE best_move = mlist->moves[best_index]; //Move with the best score
+    mlist->moves[best_index] = mlist->moves[mlist->count - 1]; //replace best move with last move; its stored in variable anyway
+    --mlist->count;
+
+    return best_move;
 }
 
 int16_t see(uint8_t stm, uint8_t square)
