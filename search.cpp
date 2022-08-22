@@ -39,6 +39,7 @@ uint64_t tt_hits = 0;
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
 int16_t eval_stack[MAX_DEPTH];
+MOVE move_stack[MAX_DEPTH];
 
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
@@ -274,8 +275,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 	}
 
-	// depth = std::min(depth + incheck, MAX_DEPTH); //check extension (add safety to avoid overflow)
-
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
@@ -287,7 +286,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	score_moves(&mlist, stm, hash_move, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, stm, hash_move, ply ? move_stack[ply-1] : MOVE{0, 0, 0, 0, 0}, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
@@ -309,6 +308,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			unmake_move(stm, curmove, res); //just skip it
 			continue;
 		}
+
+		move_stack[ply] = curmove; //store the move in the move stack (at this point move has been made)
 
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
@@ -394,7 +395,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				{
 					//Add history bonus
 					uint16_t hindex = PSQ_INDEX(curmove);
+					uint32_t chindex = CH_INDEX(move_stack[ply-1], curmove);
 					history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
+					conthist[chindex] = std::min(conthist[chindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
 				}
 
 				if (alpha >= beta) //beta cutoff
@@ -464,7 +467,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	score_moves(&mlist, stm, 0, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, stm, 0, MOVE {0, 0, 0, 0, 0}, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
@@ -499,8 +502,6 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
-
-	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;

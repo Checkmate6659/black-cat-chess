@@ -134,6 +134,8 @@ int main(int argc, char** argv)
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100;
 
+			clear_history(); //clear history
+
 			// search(board_stm, i < 5 ? 12 : 7, board_last_target, MATE_SCORE, -MATE_SCORE, //do higher depth search on first few fens, to account for potential high-depth search techniques
 			// 	board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 			// 	1, //don't allow NMP at the root, but allow it on subsequent plies
@@ -298,6 +300,7 @@ int main(int argc, char** argv)
 		else if(command == "position")
 		{
 			clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0)
+			clear_history(); //clear history, same goes with that
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100; //invalid ply: game must have been adjudicated previously
 

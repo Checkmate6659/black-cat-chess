@@ -56,6 +56,7 @@
 //Generates a unique 16-bit identifier for any move (be careful with parentheses tho; could be improved!)
 #define MOVE_ID(m) (((m).src << 8 | (m).tgt) + (m).promo)
 #define PSQ_INDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index from piece type and target (for history); ONLY USE AFTER MOVE IS UNDONE!
+#define CH_INDEX(m1, m2) ((m1).tgt ^ (m2).tgt << 7 ^ (board[(m1.tgt)] & 15) * 0x10008 ^ (board[(m2.tgt)] & 15) * 0x2400) //gives an index from pieces (with color) and target squares (for conthist)
 
 
 typedef struct
