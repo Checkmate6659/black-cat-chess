@@ -66,7 +66,7 @@ void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, M
             else
             {
                 curmove.score = SCORE_QUIET;
-                curmove.score += history[PSQ_INDEX(curmove)];
+                curmove.score += 2 * history[PSQ_INDEX(curmove)];
                 curmove.score += conthist[CH_INDEX(prevmove, prevres, curmove)];
 
                 //penalize leaving pieces attacked by enemy pawns (TODO: try tuning this! or scrapping the idea)
