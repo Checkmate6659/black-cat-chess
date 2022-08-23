@@ -108,7 +108,7 @@ extern uint8_t chkext_depth;
 #define LMR_DIST_MUL 0.0882
 #define LMR_DEPTH_MUL 0
 
-#define LMR_HISTORY_THRESHOLD 12000 //6434 with just main hist
+#define LMR_HISTORY_THRESHOLD 11000 //6434 with just main hist
 
 #define HLP_MOVECOUNT 100 //HLP not gaining; retry tuning it with continuation history
 #define HLP_REDUCE 0
