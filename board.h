@@ -57,7 +57,7 @@
 #define MOVE_ID(m) (((m).src << 8 | (m).tgt) + (m).promo)
 #define PSQ_INDEX(m) ((board[(m).src] & 15) << 7 | (m).tgt) //gives an index from piece type and target (for history); ONLY USE AFTER MOVE IS UNDONE!
 // #define CH_INDEX(ptgt, pc, cur) ((ptgt) ^ ((cur).tgt << 7) ^ (pc & 15) * 0x10008 ^ (board[(cur.src)] & 15) * 0x2400) //gives an index from pieces (with color) and target squares (for conthist); prev has been made but cur hasn't, so i use a result stack (not sure if its necessary)
-#define CH_INDEX(ptgt, pc, cur) ((ptgt) | ((cur).tgt << 7) | (pc & 15 << 14) | (board[(cur.src)] & 15 << 18)) //same, but instead of 1048576 entries (20 bits), uses 22 bits (2 bits are wasted in square coords)
+#define CH_INDEX(ptgt, pc, cur) ((ptgt) | ((cur).tgt << 7) | (pc & 7 << 14) | (board[(cur.src)] & 7 << 17)) //same, but no colors and less efficient
 
 
 typedef struct
