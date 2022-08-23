@@ -5,7 +5,8 @@
 #include "tt.h"
 
 #define HIST_LENGTH 2048
-#define CHIST_LENGTH 1048576 //1MB conthist table (colors required to differentiate counters/followups): not the most efficient
+// #define CHIST_LENGTH 1048576 //1M entry conthist table (colors required to differentiate counters/followups): not the most efficient
+#define CHIST_LENGTH 4194304 //lazier 4M entries (22 bits of index)
 #define MAX_HISTORY (uint32_t)(0x7FFFFFFF - MAX_DEPTH * MAX_DEPTH)
 
 
