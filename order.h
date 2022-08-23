@@ -14,7 +14,7 @@ extern uint32_t history[HIST_LENGTH];
 extern uint32_t conthist[CHIST_LENGTH];
 
 void clear_history();
-void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, bool use_see, uint8_t ply);
+void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, MOVE_RESULT prevres, bool use_see, uint8_t ply);
 MOVE pick_move(MLIST *mlist);
 int16_t see(uint8_t stm, uint8_t square);
 

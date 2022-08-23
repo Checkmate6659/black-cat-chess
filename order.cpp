@@ -12,7 +12,7 @@ void clear_history()
     for (uint32_t i = 0; i < CHIST_LENGTH; i++) conthist[i] = 0;
 }
 
-void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, bool use_see, uint8_t ply)
+void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, MOVE_RESULT prevres, bool use_see, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score (TODO: no longer do that, but pick the moves in the move loop)
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
@@ -67,7 +67,7 @@ void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, b
             {
                 curmove.score = SCORE_QUIET;
                 curmove.score += history[PSQ_INDEX(curmove)];
-                curmove.score += conthist[CH_INDEX(prevmove, curmove)];
+                curmove.score += conthist[CH_INDEX(prevmove, prevres, curmove)];
 
                 //penalize leaving pieces attacked by enemy pawns (TODO: try tuning this! or scrapping the idea)
                 // uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)

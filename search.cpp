@@ -38,8 +38,10 @@ uint64_t tt_hits = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
+//Move stack and result stack might not be entirely needed (conthist is the only thing theyre good for, result stack could be entirely erased; i only need move target and piece type)
 int16_t eval_stack[MAX_DEPTH];
 MOVE move_stack[MAX_DEPTH];
+MOVE_RESULT result_stack[MAX_DEPTH];
 
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
@@ -264,6 +266,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
 		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
+			//set stack entry to fake values for conthist
+			move_stack[ply] = MOVE {0, 0, 0, 0, 0};
+			result_stack[ply] = MOVE_RESULT {0, 0xFF, 0};
+
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
 
@@ -286,7 +292,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	score_moves(&mlist, stm, hash_move, ply ? move_stack[ply-1] : MOVE{0, 0, 0, 0, 0}, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, stm, hash_move, ply ? move_stack[ply-1] : MOVE{0, 0, 0, 0, 0}, ply ? result_stack[ply-1] : MOVE_RESULT{0, 0xFF, 0}, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
@@ -310,6 +316,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		move_stack[ply] = curmove; //store the move in the move stack (at this point move has been made)
+		result_stack[ply] = res; //store the result as well
 
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
@@ -395,7 +402,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				{
 					//Add history bonus
 					uint16_t hindex = PSQ_INDEX(curmove);
-					uint32_t chindex = CH_INDEX(move_stack[ply-1], curmove);
+					uint32_t chindex = CH_INDEX(move_stack[ply-1], result_stack[ply-1], curmove);
+					// if (board[move_stack[ply-1].tgt] == 0) printf("VERY BAD\n");
+					// if (result_stack[ply-1].prev_state == 0) printf("VERY BAD\n");
+					// if (!(chindex & 0xF0008)) printf("BAD BAD BAD\n");
+
 					history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 					conthist[chindex] = std::min(conthist[chindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
 				}
@@ -467,7 +478,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	score_moves(&mlist, stm, 0, MOVE {0, 0, 0, 0, 0}, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, stm, 0, MOVE {0, 0, 0, 0, 0}, MOVE_RESULT {0, 0xFF, 0}, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply; history not needed)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
