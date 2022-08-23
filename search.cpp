@@ -411,7 +411,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 					history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 					conthist[chindex] = std::min(conthist[chindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
-					conthist[chindex] = std::min(conthist[fuhindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
+					conthist[fuhindex] = std::min(conthist[fuhindex] + depth * depth, MAX_HISTORY); //Same for followup hist
 				}
 
 				if (alpha >= beta) //beta cutoff
