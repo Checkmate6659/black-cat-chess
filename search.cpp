@@ -38,10 +38,7 @@ uint64_t tt_hits = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
 
-//Move stack and result stack might not be entirely needed (conthist is the only thing theyre good for, result stack could be entirely erased; i only need move target and piece type)
 int16_t eval_stack[MAX_DEPTH];
-MOVE move_stack[MAX_DEPTH];
-MOVE_RESULT result_stack[MAX_DEPTH];
 
 uint8_t pv_length[MAX_DEPTH];
 MOVE pv_table[MAX_DEPTH][MAX_DEPTH];
@@ -292,7 +289,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	score_moves(&mlist, stm, hash_move, ply ? move_stack[ply-1] : MOVE{0, 0, 0, 0, 0}, ply ? result_stack[ply-1] : MOVE_RESULT{0, 0xFF, 0}, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, stm, hash_move, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
@@ -402,13 +399,19 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				{
 					//Add history bonus
 					uint16_t hindex = PSQ_INDEX(curmove);
-					uint32_t chindex = CH_INDEX(move_stack[ply-1], result_stack[ply-1], curmove);
-					// if (board[move_stack[ply-1].tgt] == 0) printf("VERY BAD\n");
-					// if (result_stack[ply-1].prev_state == 0) printf("VERY BAD\n");
-					// if (!(chindex & 0xF0008)) printf("BAD BAD BAD\n");
+
+					uint8_t prev_pc = ply ? result_stack[ply-1].prev_state : 0;
+					uint8_t prev_tgt = ply ? move_stack[ply-1].tgt : 8;
+
+					uint8_t fuh_pc = ply > 1 ? result_stack[ply-2].prev_state : 0;
+					uint8_t fuh_tgt = ply > 1 ? move_stack[ply-2].tgt : 8;
+
+					uint32_t chindex = CH_INDEX(prev_tgt, prev_pc, curmove);
+					uint32_t fuhindex = CH_INDEX(fuh_tgt, fuh_pc, curmove);
 
 					history[hindex] = std::min(history[hindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme
 					conthist[chindex] = std::min(conthist[chindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
+					conthist[chindex] = std::min(conthist[fuhindex] + depth * depth, MAX_HISTORY); //Quadratic incrementation scheme for conthist as well
 				}
 
 				if (alpha >= beta) //beta cutoff
@@ -478,7 +481,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	score_moves(&mlist, stm, 0, MOVE {0, 0, 0, 0, 0}, MOVE_RESULT {0, 0xFF, 0}, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply; history not needed)
+	score_moves(&mlist, stm, 0, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply; history not needed)
 
 	while (mlist.count) //iterate through the move list backwards
 	{

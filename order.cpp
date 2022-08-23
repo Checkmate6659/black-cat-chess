@@ -5,6 +5,10 @@ uint16_t killers[MAX_DEPTH][2];
 uint32_t history[HIST_LENGTH];
 uint32_t conthist[CHIST_LENGTH];
 
+//Move stack and result stack might not be entirely needed (conthist is the only thing theyre good for, result stack could be entirely erased; i only need move target and piece type)
+MOVE move_stack[MAX_DEPTH];
+MOVE_RESULT result_stack[MAX_DEPTH];
+
 
 void clear_history()
 {
@@ -12,7 +16,7 @@ void clear_history()
     for (uint32_t i = 0; i < CHIST_LENGTH; i++) conthist[i] = 0;
 }
 
-void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, MOVE_RESULT prevres, bool use_see, uint8_t ply)
+void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, uint8_t ply)
 {
     //add scores to each move, and sort the moves by score (TODO: no longer do that, but pick the moves in the move loop)
     //this engine uses insertion sort, which is O(n^2) in the worst case, but works well for small n
@@ -65,9 +69,15 @@ void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, MOVE prevmove, M
             }
             else
             {
+                uint8_t prev_pc = ply ? result_stack[ply-1].prev_state : 0;
+                uint8_t prev_tgt = ply ? move_stack[ply-1].tgt : 8;
+                uint8_t fuh_pc = ply > 1 ? result_stack[ply-2].prev_state : 0;
+                uint8_t fuh_tgt = ply > 1 ? move_stack[ply-2].tgt : 8;
+
                 curmove.score = SCORE_QUIET;
                 curmove.score += 2 * history[PSQ_INDEX(curmove)];
-                curmove.score += conthist[CH_INDEX(prevmove, prevres, curmove)];
+                curmove.score += 2 * conthist[CH_INDEX(prev_tgt, prev_pc, curmove)];
+                curmove.score += conthist[CH_INDEX(fuh_tgt, fuh_pc, curmove)];
 
                 //penalize leaving pieces attacked by enemy pawns (TODO: try tuning this! or scrapping the idea)
                 // uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)
