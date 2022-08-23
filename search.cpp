@@ -521,7 +521,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 	MLIST mlist;
 	generate_moves(&mlist, board_stm, board_last_target);
 
-	MOVE best_move = mlist.moves[pseudo_rng64() % mlist.count]; //random pseudo-legal move for some extra safety (TODO: guarantee that it's legal, and maybe advantage good-looking moves)
+	MOVE best_move = mlist.moves[rand() % mlist.count]; //random pseudo-legal move for some extra safety (TODO: guarantee that it's legal, and maybe advantage good-looking moves)
 
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < std::min(fixed_depth, (uint8_t)MAX_DEPTH); depth++) //increase depth until MAX_DEPTH reached
