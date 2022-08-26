@@ -211,8 +211,8 @@ int16_t evaluate(uint8_t stm)
         uint8_t psqt_index = sq ^ (piece & 16) * 7;
         int16_t perspective = (piece & 16) ? -1 : 1;
 
-        midgame_psqt += perspective * (mg_piece_values[piece & 7] + mg_psqt[piece & PTYPE][psqt_index]); //midgame material/PSQT
-        endgame_psqt += perspective * (eg_piece_values[piece & 7] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
+        midgame_psqt += perspective * (mg_piece_values[piece & PTYPE] + mg_psqt[piece & PTYPE][psqt_index]); //midgame material/PSQT
+        endgame_psqt += perspective * (eg_piece_values[piece & PTYPE] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
     }
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase

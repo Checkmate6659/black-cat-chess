@@ -480,6 +480,13 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		node_count++;
 
+		//SEE pruning in qsearch
+		if (SEE_VALUES[res.piece & PTYPE] < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
+		{
+			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
+			continue;
+		}
+
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 
 		unmake_move(stm, curmove, res);
