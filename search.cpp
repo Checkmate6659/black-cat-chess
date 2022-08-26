@@ -390,16 +390,16 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				extension += 1; //extend by 1 move and cancel previous reductions
 				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) extension += 1;
 			}
-			else if (singular_beta >= beta) //multi-cut
-			{
-				unmake_move(stm, curmove, res);
-				return singular_beta;
-			}
-			//negative extensions
-			else if (entry.eval >= beta)
-				reduction += 2;
-			else if (entry.eval <= alpha && entry.eval <= se_val)
-				reduction += 1;
+			// else if (singular_beta >= beta) //multi-cut
+			// {
+			// 	unmake_move(stm, curmove, res);
+			// 	return singular_beta;
+			// }
+			// //negative extensions
+			// else if (entry.eval >= beta)
+			// 	reduction += 2;
+			// else if (entry.eval <= alpha && entry.eval <= se_val)
+			// 	reduction += 1;
 		}
 
 		reduction = extension ? 0 : std::max((int8_t)0, std::min(reduction, (int8_t)(depth - 1))); //don't reduce if extending; make sure reduction is not dropping into qsearch or extending

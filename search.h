@@ -114,7 +114,7 @@ extern uint8_t chkext_depth;
 
 #define SE_MINDEPTH 4
 #define SE_MULTIPLIER 3
-#define SE_DBLEXT_THRESHOLD 15
+#define SE_DBLEXT_THRESHOLD 26 //from SF
 #define SE_TT_DEPTH_DIFF 3
 #endif
 
