@@ -310,6 +310,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			continue;
 		}
 
+		//SEE pruning at shallow depth
+		int16_t seeMargin = (curmove.flags & F_CAPT) ? SEE_NOISY * depth * depth : SEE_QUIET * depth; //compute SEE margin
+		if (depth <= SEE_MAX_DEPTH && SEE_VALUES[res.piece & PTYPE] + seeMargin < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
+		{
+			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
+			continue;
+		}
+
 		int8_t updated_last_zeroing_ply = last_zeroing_ply;
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 

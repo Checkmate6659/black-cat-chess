@@ -98,7 +98,7 @@ extern int8_t half_move_clock;
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 const uint32_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
-const int16_t SEE_VALUES[] = {0, 2, 2, 6, 4096, 7, 10, 19}; //SEE values for each piece type
+const int16_t SEE_VALUES[] = {0, 100, 100, 400, 4096, 450, 675, 1300}; //SEE values for each piece type
 
 
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
