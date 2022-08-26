@@ -365,6 +365,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			}
 		}
 
+		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
+		else reduction = 0; //don't do LMR in check or on tactical moves
+
 		reduction = std::max((int8_t)0, std::min(reduction, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
 
 		//Singular extension search: do after reduction safety checks to ensure it can extend past depth
@@ -384,7 +387,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (se_val < singular_beta) //singular move
 			{
 				reduction = -1; //extend by 1 move and cancel previous reductions
-				//TODO: do double extensions
+				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) reduction = -2;
 			}
 			else if (singular_beta >= beta) //multi-cut
 			{
@@ -397,19 +400,16 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			else if (entry.eval <= alpha && entry.eval <= se_val)
 				reduction += 1;
 
-			//again, make sure we aren't dropping into qsearch
+			//again, make sure we aren't dropping into qsearch after negative extensions
 			reduction = std::min(reduction, (int8_t)(depth - 1));
 		}
-
-		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
-		else reduction = 0; //don't do LMR in check or on tactical moves
 
 		node_count++;
 		curmove_hash ^= move_hash(stm, curmove);
 
 		int16_t eval;
 
-		if (/* legal_move_count */ reduction) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
+		if (legal_move_count) //PVS
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - reduction, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
