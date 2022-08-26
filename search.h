@@ -38,10 +38,6 @@ extern int rfp_max_depth, rfp_margin, rfp_impr;
 extern int iid_reduction_d;
 #define TT_FAIL_REDUCTION_MINDEPTH iid_reduction_d //Min depth to reduce PV-nodes where probing was unsuccessful
 
-//SEE activation (has yielded me bad results so far because of significant slowness)
-#define SEE_SEARCH false //activate during main search
-#define SEE_QSEARCH false //activate during qsearch
-
 extern int dprune;
 // #define DELTA dprune //delta pruning threshold
 
@@ -90,10 +86,6 @@ extern uint8_t chkext_depth;
 #define RFP_IMPR 75 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
-
-//SEE activation (has yielded me bad results so far because of significant slowness)
-#define SEE_SEARCH false //activate during main search
-#define SEE_QSEARCH false //activate during qsearch
 
 // #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 

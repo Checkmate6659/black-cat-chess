@@ -287,7 +287,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	score_moves(&mlist, stm, hash_move, SEE_SEARCH, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, stm, hash_move, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
@@ -464,7 +464,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	score_moves(&mlist, stm, 0, SEE_QSEARCH, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, stm, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{

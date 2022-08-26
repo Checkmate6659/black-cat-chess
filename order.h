@@ -12,7 +12,7 @@ extern uint16_t killers[MAX_DEPTH][2];
 extern uint32_t history[HIST_LENGTH];
 
 void clear_history();
-void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, uint8_t ply);
+void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, uint8_t ply);
 MOVE pick_move(MLIST *mlist);
 int16_t see(uint8_t stm, uint8_t square);
 
