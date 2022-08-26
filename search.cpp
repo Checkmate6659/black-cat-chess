@@ -382,26 +382,28 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			int16_t singular_beta = entry.eval - SE_MULTIPLIER * depth;
 			uint8_t singular_depth = (depth - 1) / 2;
 
+			unmake_move(stm, curmove, res);
 			uint16_t se_val = search(stm, singular_depth, last_target, singular_beta - 1, singular_beta, hash, legal_move_count, ply, last_zeroing_ply);
+			make_move(stm, curmove);
 
 			if (se_val < singular_beta) //singular move
 			{
 				reduction = -1; //extend by 1 move and cancel previous reductions
 				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) reduction = -2;
 			}
-			else if (singular_beta >= beta) //multi-cut
-			{
-				unmake_move(stm, curmove, res);
-				return singular_beta;
-			}
-			//negative extensions
-			else if (entry.eval >= beta)
-				reduction += 2;
-			else if (entry.eval <= alpha && entry.eval <= se_val)
-				reduction += 1;
+			// else if (singular_beta >= beta) //multi-cut
+			// {
+			// 	unmake_move(stm, curmove, res);
+			// 	return singular_beta;
+			// }
+			// //negative extensions
+			// else if (entry.eval >= beta)
+			// 	reduction += 2;
+			// else if (entry.eval <= alpha && entry.eval <= se_val)
+			// 	reduction += 1;
 
-			//again, make sure we aren't dropping into qsearch after negative extensions
-			reduction = std::min(reduction, (int8_t)(depth - 1));
+			// //again, make sure we aren't dropping into qsearch after negative extensions
+			// reduction = std::min(reduction, (int8_t)(depth - 1));
 		}
 
 		node_count++;

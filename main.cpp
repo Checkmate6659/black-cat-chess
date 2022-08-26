@@ -131,15 +131,15 @@ int main(int argc, char** argv)
 			load_fen(benchfens[i]);
 
 			// clear_tt(); //clear the transposition table
-			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
-				repetition_table[i] = -100;
+			for (RPT_INDEX j = 0; j < RPT_SIZE; j++) //clear the repetition table
+				repetition_table[j] = -100;
 
 			// search(board_stm, i < 5 ? 12 : 7, board_last_target, MATE_SCORE, -MATE_SCORE, //do higher depth search on first few fens, to account for potential high-depth search techniques
 			// 	board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 			// 	1, //don't allow NMP at the root, but allow it on subsequent plies
 			// 	0, -half_move_clock);
 
-			search_root(-1, i < 5 ? 12 : 7);
+			search_root(-1, i < 5 ? 15 : 9);
 		}
 
 		clock_t end = clock();
