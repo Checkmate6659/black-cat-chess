@@ -157,7 +157,7 @@ bool nullmove_safe(uint8_t stm)
 }
 
 //TODO: implement draw by insufficient material
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply)
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t excluded_move, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
@@ -261,10 +261,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		reduction = NULL_MOVE_REDUCTION_CONST + depth/NULL_MOVE_REDUCTION_DEPTH + (static_eval - beta) / NULL_MOVE_REDUCTION_DIV; //uncapping eval-beta param probably good idea
 
 		reduction = std::min((uint8_t)(depth - 1), reduction); //don't reduce past depth (depth - 1 to account for the -1 in the search call)
-		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
+		if (excluded_move == 0xFF && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
 			//Try search with null move (enemy's turn, ply + 1)
-			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
+			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 0xFE, ply + 1, ply);
 
 			// if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
@@ -287,7 +287,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
 
-	score_moves(&mlist, stm, hash_move, ply); //sort the moves by score (with the hash move)
+	score_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
 	repetition_table[rpt_index] = last_zeroing_ply; //mark this position as seen before for upcoming searches
 
@@ -300,6 +300,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		// if (!legal_move_count && hash_move && curmove.score != SCORE_HASH) collisions++;
 
 		MOVE_RESULT res = make_move(stm, curmove);
+
+		//Move skipped by singular extension search
+		if (legal_move_count == excluded_move)
+		{
+			legal_move_count++;
+			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
+			continue;
+		}
 
 		//If the move is illegal, then we should not search it!
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
@@ -322,22 +330,22 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
 		//LMR implementation close to Ethereal (TODO: tune)
-		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
+		int8_t reduction = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
-		if(lmr_do_pv) lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
-		if(lmr_do_impr) lmr += !improving; //reduce less for improving
-		if(lmr_do_chk_kmove) lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
-		if(lmr_do_killer) lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+		if(lmr_do_pv) reduction += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		if(lmr_do_impr) reduction += !improving; //reduce less for improving
+		if(lmr_do_chk_kmove) reduction += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		if(lmr_do_killer) reduction -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #else //king moves in check, very suspicious
-		lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
-		lmr += !improving; //reduce less for improving
-		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
-		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+		reduction += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		reduction += !improving; //reduce less for improving
+		reduction += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		reduction -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #endif
-		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
+		reduction -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
-		//history leaf pruning/reduction
+		//history leaf pruning/reduction (TODO: remove if unnecessary)
 		if (beta - alpha == 1 && !incheck && legal_move_count >= HLP_MOVECOUNT //make sure its not a PV node, we're not in check, and a move has been found
 #ifdef TUNING_MODE
 		&& (!improving || hlp_do_improving)
@@ -348,7 +356,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			if (curmove.score < SCORE_QUIET + HLP_REDUCE) //poor history score
 			{
-				lmr++; //reduce moves with poor histories
+				reduction++; //reduce moves with poor histories
 				if (curmove.score < SCORE_QUIET + HLP_PRUNE) //very poor history score
 				{
 					unmake_move(stm, curmove, res); //history leaf pruning
@@ -357,20 +365,54 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			}
 		}
 
-		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
+		reduction = std::max((int8_t)0, std::min(reduction, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
+
+		//Singular extension search: do after reduction safety checks to ensure it can extend past depth
+		if (depth >= SE_MINDEPTH //TODO: add/tune sf-like modulation (more if in a PV-node)
+			&& curmove.score == SCORE_HASH
+			&& excluded_move != 0xFF
+			&& !IS_KNOWN_WIN(entry.eval)
+			&& entry.flag != HF_ALPHA
+			&& entry.depth + SE_TT_DEPTH_DIFF >= depth
+		)
+		{
+			int16_t singular_beta = entry.eval - SE_MULTIPLIER * depth;
+			uint8_t singular_depth = (depth - 1) / 2;
+
+			uint16_t se_val = search(stm, singular_depth, last_target, singular_beta - 1, singular_beta, hash, legal_move_count, ply, last_zeroing_ply);
+
+			if (se_val < singular_beta) //singular move
+			{
+				reduction = -1; //extend by 1 move and cancel previous reductions
+				//TODO: do double extensions
+			}
+			else if (singular_beta >= beta) //multi-cut
+			{
+				unmake_move(stm, curmove, res);
+				return singular_beta;
+			}
+			//negative extensions
+			else if (entry.eval >= beta)
+				reduction += 2;
+			else if (entry.eval <= alpha && entry.eval <= se_val)
+				reduction += 1;
+
+			//again, make sure we aren't dropping into qsearch
+			reduction = std::min(reduction, (int8_t)(depth - 1));
+		}
 
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
-		else lmr = 0; //don't do LMR in check or on tactical moves
+		else reduction = 0; //don't do LMR in check or on tactical moves
 
 		node_count++;
 		curmove_hash ^= move_hash(stm, curmove);
 
 		int16_t eval;
 
-		if (/* legal_move_count */ lmr) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
+		if (/* legal_move_count */ reduction) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
 		{
 			//search with null window and potentially reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1 - reduction, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 			// if (panic) //check if we ran out of time
 			// {
 			// 	unmake_move(stm, curmove, res); //we have to unmake the moves!
@@ -378,10 +420,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			// }
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
-				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 		}
 		else
-			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 
 		legal_move_count++; //only implement legal_move_count here, so that its equal to 0 on the first move in the PVS condition
 
@@ -472,7 +514,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 	if (mlist.count == 0) return alpha; //No captures available: return alpha
 
-	score_moves(&mlist, stm, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
@@ -583,7 +625,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 			eval = search(board_stm, depth, board_last_target, alpha, beta,
 				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
-				1, //don't allow NMP at the root, but allow it on subsequent plies
+				0xFE, //don't allow NMP at the root, but allow it on subsequent plies
 				0, -half_move_clock);
 		} while(eval <= alpha || eval >= beta);
 

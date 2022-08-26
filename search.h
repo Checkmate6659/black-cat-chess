@@ -111,6 +111,10 @@ extern uint8_t chkext_depth;
 #define SEE_QUIET 64 //*depth
 
 #define CHKEXT_MINDEPTH 6
+
+#define SE_MINDEPTH 4
+#define SE_MULTIPLIER 3
+#define SE_TT_DEPTH_DIFF 3
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)
@@ -131,7 +135,7 @@ void init_lmr();
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 
 bool nullmove_safe(uint8_t stm);
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply);
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, uint8_t excluded_move, uint8_t ply, int8_t last_zeroing_ply);
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta);
 void search_root(uint32_t time_ms, uint8_t fixed_depth);
 
