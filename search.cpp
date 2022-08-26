@@ -388,7 +388,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			if (se_val < singular_beta) //singular move
 			{
 				extension += 1; //extend by 1 move and cancel previous reductions
-				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) extension += 1;
+				// if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) extension += 1;
 			}
 			// else if (singular_beta >= beta) //multi-cut
 			// {
