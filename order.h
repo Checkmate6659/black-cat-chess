@@ -4,6 +4,10 @@
 #include "board.h"
 #include "tt.h"
 
+#include "search.h" //FOR TUNING ONLY
+#define TUNING
+
+
 #define HIST_LENGTH 2048
 #define CHIST_LENGTH 1048576 //1M entry conthist table (no colors): not the most efficient
 #define MAX_HISTORY (uint32_t)(0x7FFFFFFF - MAX_DEPTH * MAX_DEPTH)

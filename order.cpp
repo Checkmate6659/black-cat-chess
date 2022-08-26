@@ -75,9 +75,15 @@ void score_moves(MLIST *mlist, uint8_t stm, uint16_t hash_move, bool use_see, ui
                 uint8_t fuh_tgt = ply > 1 ? move_stack[ply-2].tgt : 8;
 
                 curmove.score = SCORE_QUIET;
+#ifdef TUNING
+                curmove.score += 100 * history[PSQ_INDEX(curmove)];
+                curmove.score += ch0_wt * conthist[CH_INDEX(prev_tgt, prev_pc, curmove)];
+                curmove.score += ch1_wt * conthist[CH_INDEX(fuh_tgt, fuh_pc, curmove)];
+#else
                 curmove.score += 2 * history[PSQ_INDEX(curmove)];
                 curmove.score += 2 * conthist[CH_INDEX(prev_tgt, prev_pc, curmove)];
                 curmove.score += conthist[CH_INDEX(fuh_tgt, fuh_pc, curmove)];
+#endif
 
                 //penalize leaving pieces attacked by enemy pawns (TODO: try tuning this! or scrapping the idea)
                 // uint8_t enemy_pawn = (stm >> 3) ^ 3; //enemy pawn's type (1 = white pawn; 2 = black pawn)

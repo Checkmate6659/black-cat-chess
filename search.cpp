@@ -12,18 +12,20 @@ float lmr_const = 5512, lmr_mul = 0; //x10000; actually the lmr_mul is for log(d
 //TODO: do tests instead of tuning for bools, its not good to tune bools with spsa
 bool lmr_do_pv = true;
 bool lmr_do_impr = true;
-bool lmr_do_chk_kmove = false;
+bool lmr_do_chk_kmove = true; //should be set to false?
 bool lmr_do_killer = true;
-uint32_t lmr_history_threshold = 6434;
+uint32_t lmr_history_threshold = 1100000; //changed from 6434 to 1100000 with conthists (main hist weight = x100)
 
 //Extra LMR parameters, for better LMR
 float lmr_sqrt_mul = 1262, lmr_dist_mul = 882, lmr_depth_mul = 0; //all x10000
 
 bool hlp_do_improving = true; //do history leaf pruning on improving nodes
 uint8_t hlp_movecount = 6; //move count from which we can do it
-uint32_t hlp_reduce = 5000, hlp_prune = 2500;
+uint32_t hlp_reduce = 0, hlp_prune = 0;
 
 uint8_t chkext_depth = 6; //check extension minimum depth
+
+uint16_t ch0_wt = 100, ch1_wt = 50; //conthists weights (main hist has a weight of 100)
 #endif
 
 

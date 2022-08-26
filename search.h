@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-// #define TUNING_MODE
+#define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -73,6 +73,8 @@ extern uint32_t hlp_reduce, hlp_prune;
 
 extern uint8_t chkext_depth;
 #define CHKEXT_MINDEPTH chkext_depth
+
+extern uint16_t ch0_wt, ch1_wt;
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
