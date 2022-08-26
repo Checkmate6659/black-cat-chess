@@ -241,8 +241,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t legal_move_count = 0;
 	uint8_t lmr_move_count = 0;
 
-	if (incheck && depth > CHKEXT_MINDEPTH) depth++; //check extension
-	else if (beta - alpha == 1) //Non-PV node, not extended in this node (TODO: not extended in entire line)
+	if (beta - alpha == 1 && !incheck) //Non-PV node, not extended in this node (TODO: not extended in entire line)
 	{
 		//Reverse futility pruning/static null move pruning (TODO: try with !incheck)
 		if (/* depth <= RFP_MAX_DEPTH */ true											//RFP max depth shown to be useless! uncapped RFP
@@ -330,6 +329,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
 		//LMR implementation close to Ethereal (TODO: tune)
+		int8_t extension = incheck && depth > CHKEXT_MINDEPTH; //check extension
 		int8_t reduction = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
@@ -368,7 +368,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 		else reduction = 0; //don't do LMR in check or on tactical moves
 
-		reduction = std::max((int8_t)0, std::min(reduction, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
 
 		//Singular extension search: do after reduction safety checks to ensure it can extend past depth
 		if (depth >= SE_MINDEPTH //TODO: add/tune sf-like modulation (more if in a PV-node)
@@ -388,23 +387,23 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 			if (se_val < singular_beta) //singular move
 			{
-				reduction = -1; //extend by 1 move and cancel previous reductions
-				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) reduction = -2;
+				extension += 2; //extend by 1 move and cancel previous reductions
+				if (beta - alpha == 1 && se_val < singular_beta - SE_DBLEXT_THRESHOLD) extension += 1;
 			}
-			// else if (singular_beta >= beta) //multi-cut
-			// {
-			// 	unmake_move(stm, curmove, res);
-			// 	return singular_beta;
-			// }
-			// //negative extensions
-			// else if (entry.eval >= beta)
-			// 	reduction += 2;
-			// else if (entry.eval <= alpha && entry.eval <= se_val)
-			// 	reduction += 1;
-
-			// //again, make sure we aren't dropping into qsearch after negative extensions
-			// reduction = std::min(reduction, (int8_t)(depth - 1));
+			else if (singular_beta >= beta) //multi-cut
+			{
+				unmake_move(stm, curmove, res);
+				return singular_beta;
+			}
+			//negative extensions
+			else if (entry.eval >= beta)
+				reduction += 2;
+			else if (entry.eval <= alpha && entry.eval <= se_val)
+				reduction += 1;
 		}
+
+		reduction = extension ? 0 : std::max((int8_t)0, std::min(reduction, (int8_t)(depth - 1))); //don't reduce if extending; make sure reduction is not dropping into qsearch or extending
+
 
 		node_count++;
 		curmove_hash ^= move_hash(stm, curmove);
@@ -414,7 +413,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (legal_move_count) //PVS
 		{
 			//search with null window and potentially reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - reduction, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1 - reduction + extension, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 			// if (panic) //check if we ran out of time
 			// {
 			// 	unmake_move(stm, curmove, res); //we have to unmake the moves!
@@ -422,10 +421,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			// }
 
 			if (eval > alpha) //beat alpha: re-search with full window and no reduction
-				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
+				eval = -search(stm ^ ENEMY, depth - 1 + extension, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 		}
 		else
-			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1 + extension, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, 0xFF, ply + 1, updated_last_zeroing_ply);
 
 		legal_move_count++; //only implement legal_move_count here, so that its equal to 0 on the first move in the PVS condition
 
