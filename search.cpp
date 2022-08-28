@@ -177,8 +177,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint16_t hash_move = 0;
 	TT_ENTRY entry = get_entry(key, ply); //Try to get a TT entry
 
-	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
-	if (entry.flag) //TT hit
+	if (excluded_move == 0xFF && entry.flag) //TT hit, not in SE search
 	{
 		//TODO: check for collisions! (is the move legal, or pseudo-legal)
 		//and if there are collisions, get around them somehow
@@ -273,9 +272,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 	}
 
-	// depth = std::min(depth + incheck, MAX_DEPTH); //check extension (add safety to avoid overflow)
+	depth += depth > CHKEXT_MINDEPTH && incheck;
 
 	MLIST mlist;
+	//TODO: pass incheck variable as arg, so that recomputing it in movegen is not necessary
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
 
 	//NOTE: the following statement will only be of any use when partial or full move legality will be implemented!
@@ -329,7 +329,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
 		//LMR implementation close to Ethereal (TODO: tune)
-		int8_t extension = incheck && depth > CHKEXT_MINDEPTH; //check extension
+		// int8_t extension = depth > CHKEXT_MINDEPTH && incheck; //old check extension, forbidding reduction when giving check
+		// int8_t extension = depth > CHKEXT_MINDEPTH && (sq_attacked(plist[stm ^ 16], stm) != 0xFF); //check extension: cancel reductions when giving check, and not when in check
+		int8_t extension = 0;
 		int8_t reduction = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
@@ -340,7 +342,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 #else //king moves in check, very suspicious
 		reduction += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		reduction += !improving; //reduce less for improving
-		reduction += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		// reduction += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		reduction -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #endif
 		reduction -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
@@ -455,7 +457,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					if (panic) return 0; //should NOT set TT entries when out of time!
 
 					//Handle hash entry: upper bound (fail high)
-					set_entry(key, HF_BETA, depth, beta, curmove, ply);
+					if(excluded_move == 0xFF) set_entry(key, HF_BETA, depth, beta, curmove, ply);
 
 					//Killer move: not a capture nor a promotion
 					if (curmove.flags < F_CAPT)
@@ -490,10 +492,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
-	else if (alpha > old_alpha)
-		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
-	else
-		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
+	else if(excluded_move == 0xFF)
+	{
+		if (alpha > old_alpha)
+			set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
+		else
+			set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
+	}
 
 	// return alpha; //FAIL HARD
 	return best_score; //FAIL SOFT

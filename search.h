@@ -110,7 +110,7 @@ extern uint8_t chkext_depth;
 #define SEE_NOISY 19 //*depth^2
 #define SEE_QUIET 64 //*depth
 
-#define CHKEXT_MINDEPTH 6
+#define CHKEXT_MINDEPTH 6 //TODO: re-tune
 
 #define SE_MINDEPTH 4
 #define SE_MULTIPLIER 3
