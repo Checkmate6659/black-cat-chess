@@ -272,7 +272,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 	}
 
-	depth += depth > CHKEXT_MINDEPTH && incheck;
+	// depth += depth > CHKEXT_MINDEPTH && incheck;
 
 	MLIST mlist;
 	//TODO: pass incheck variable as arg, so that recomputing it in movegen is not necessary
@@ -329,9 +329,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if ((res.prev_state & PTYPE) < 3 || (curmove.flags & F_CAPT)) updated_last_zeroing_ply = ply; //if we moved a pawn, or captured, the HMC is reset
 
 		//LMR implementation close to Ethereal (TODO: tune)
-		// int8_t extension = depth > CHKEXT_MINDEPTH && incheck; //old check extension, forbidding reduction when giving check
+		int8_t extension = depth > CHKEXT_MINDEPTH && incheck; //old check extension, forbidding reduction when giving check
 		// int8_t extension = depth > CHKEXT_MINDEPTH && (sq_attacked(plist[stm ^ 16], stm) != 0xFF); //check extension: cancel reductions when giving check, and not when in check
-		int8_t extension = 0;
+		// int8_t extension = 0;
 		int8_t reduction = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
