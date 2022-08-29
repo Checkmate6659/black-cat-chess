@@ -102,7 +102,8 @@ void init_search() //Initialize the late move reduction table
 
 				//Ethereal LMR
 				// lmr_table[depth][move] = (uint8_t)(0.75 + log((double)depth)*log((double)move)/2.25); //Ethereal log reduction
-				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL); //Derived version
+
+				// lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL); //Derived version (used previously)
 
 				//Tunable LMR
 				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL + (sqrt((double)depth - 1) + sqrt((double)move - 1))*LMR_SQRT_MUL + sqrt(depth*depth + move*move)*LMR_DIST_MUL + depth*LMR_DEPTH_MUL); //Max-tunable LMR
@@ -111,8 +112,8 @@ void init_search() //Initialize the late move reduction table
 	
 	for (uint8_t depth = 1; depth < LMP_MAXDEPTH; depth++) //don't need at 0 depth, since it will be unused
 	{
-		lmp_table[depth][0] = std::min(2.5 + 2 * depth * depth / 4.5, 255.0);
-		lmp_table[depth][1] = std::min(4.0 + 4 * depth * depth / 4.5, 255.0);
+		lmp_table[depth][0] = std::min(3.0 + 3 * depth * depth / 4.5, 255.0); //not improving
+		lmp_table[depth][1] = std::min(5.5 + 7 * depth * depth / 4.5, 255.0); //improving
 	}
 }
 
