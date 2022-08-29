@@ -382,7 +382,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		int16_t eval;
 
-		if (/* legal_move_count */ lmr) //LMR implementation, merged with PVS (switch lmr to legal_move_count to enable PVS)
+		if (legal_move_count /* lmr */) //LMR implementation, merged with PVS
 		{
 			//search with null window and potentially reduced depth
 			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
