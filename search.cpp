@@ -393,9 +393,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			// }
 
 			if ((eval > alpha && eval < beta) //beat alpha: re-search with full window and no reduction
-			/* || (node_type == PV_NODE && eval == beta && beta == alpha+1) */)
+			|| (node_type == PV_NODE && eval == beta && beta == alpha+1))
 			{
-				// eval -= eval == alpha + 1; //If not a real lower bound, decrement eval
+				eval -= eval == alpha + 1; //If not a real lower bound, decrement eval
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -eval, -node_type, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 			}
 		}
@@ -475,7 +475,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha) //We have beaten alpha
 		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
-	else if (node_type == CUT_NODE) //Fail low: only store if not Cut-node, otherwise value is uncertain
+	else if (node_type != CUT_NODE) //Fail low: only store if not Cut-node, otherwise value is uncertain
 		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
