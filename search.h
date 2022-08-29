@@ -15,6 +15,10 @@
 #define RPT_SIZE (1 << RPT_BITCNT) //Repetition table size
 #define RPT_MASK (RPT_SIZE - 1) //Repetition table mask (Zobrist key & mask = table index)
 
+#define PV_NODE 0
+#define CUT_NODE 1
+#define ALL_NODE -1
+
 #ifdef TUNING_MODE
 
 //Not tuning these immediately
@@ -134,7 +138,7 @@ void init_search();
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 
 bool nullmove_safe(uint8_t stm);
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply);
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, int8_t node_type, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply);
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta);
 void search_root(uint32_t time_ms, uint8_t fixed_depth);
 
