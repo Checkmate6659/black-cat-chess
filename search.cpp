@@ -475,7 +475,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha) //We have beaten alpha
 		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
-	else if (node_type != CUT_NODE) //Fail low: only store if not Cut-node, otherwise value is uncertain
+	else /* if (node_type != CUT_NODE) */ //Fail low: only store if not Cut-node, otherwise value is uncertain
 		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
