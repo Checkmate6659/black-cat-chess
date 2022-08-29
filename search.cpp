@@ -393,9 +393,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			// }
 
 			if ((eval > alpha && eval < beta) //beat alpha: re-search with full window and no reduction
-			|| (node_type == PV_NODE && eval == beta && beta == alpha+1))
+			/* || (node_type == PV_NODE && eval == beta && beta == alpha+1) */)
 			{
-				eval -= eval == alpha + 1; //If not a real lower bound, decrement eval
+				// eval -= eval == alpha + 1; //If not a real lower bound, decrement eval
 				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -eval, -node_type, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 			}
 		}
