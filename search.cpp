@@ -557,29 +557,9 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 		alpha = (alpha_margin < MAX_ASPI_MARGIN) ? (eval - alpha_margin) : MATE_SCORE;
 		beta = (beta_margin < MAX_ASPI_MARGIN) ? (eval + beta_margin) : -MATE_SCORE;
 
-		//Simplified aspiration windows
-		// if (depth < 4) eval = alpha; //first few iterations don't aspirate search
-		// else eval = search(board_stm, depth, board_last_target, alpha, beta,
-		// 	board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
-		// 	1, //don't allow NMP at the root, but allow it on subsequent plies
-		// 	0, -half_move_clock);
-
-		// if (eval <= alpha || eval >= beta) //Aspirated search failed: re-search on full window
-		// {
-		// 	alpha = MATE_SCORE;
-		// 	beta = -MATE_SCORE;
-
-		// 	eval = search(board_stm, depth, board_last_target, alpha, beta,
-		// 		board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
-		// 		1, //don't allow NMP at the root, but allow it on subsequent plies
-		// 		0, -half_move_clock);
-		// }
-
-
-		//More complex aspiration windows
 		//Aspiration window loop: do-while to avoid skipping search entirely
 		do {
-			while(eval <= alpha || eval >= beta)
+			while(eval < alpha || eval > beta)
 			{
 				if (depth >= 4)
 				{
@@ -593,6 +573,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 				{
 					alpha = MATE_SCORE;
 					beta = -MATE_SCORE;
+					break;
 				}
 			}
 
@@ -600,7 +581,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 				1, //don't allow NMP at the root, but allow it on subsequent plies
 				0, -half_move_clock);
-		} while(eval <= alpha || eval >= beta);
+		} while(eval < alpha || eval > beta);
 
 
 		clock_t end = clock();
