@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 			// 	1, //don't allow NMP at the root, but allow it on subsequent plies
 			// 	0, -half_move_clock);
 
-			search_root(-1, i < 5 ? 12 : 7);
+			search_root(-1, i < 5 ? 13 : 9);
 		}
 
 		clock_t end = clock();
