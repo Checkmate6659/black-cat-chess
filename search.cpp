@@ -225,7 +225,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return qsearch(stm, alpha, beta);
 	}
 
-	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (alternative IID)
+	if (!entry.flag && /* beta - alpha > 1 &&  */depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (IIR)
 
 	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
 
