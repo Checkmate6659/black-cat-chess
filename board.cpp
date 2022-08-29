@@ -68,6 +68,8 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
+int16_t SEE_VALUES[] = {0, 100, 100, 400, 16383, 450, 675, 1300}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
+
 
 void print_board(uint8_t *b)
 {
@@ -663,7 +665,7 @@ MOVE get_smallest_attacker_move(uint8_t stm, uint8_t square)
 	uint8_t end_value = (stm ^ ENEMY) << 1; //start value + 16 pieces
 
 	uint8_t smallest_attacker_square = 0xFF;
-	int16_t smallest_value = 0x7FFF;
+	int16_t smallest_value = 32767;
 
 	for (uint8_t plist_idx = (stm & 16) ^ 16; plist_idx < end_value; plist_idx++) //iterate through the attacker's pieces
 	{

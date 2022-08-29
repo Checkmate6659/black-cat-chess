@@ -54,7 +54,20 @@ OPTION uci_options[] = {
 	{"HLPMovecount", "spin", 1, 100, (double)hlp_movecount, ""},
 	{"HLPReduce", "spin", 0, 999999, (double)hlp_reduce, ""}, //history score
 	{"HLPPrune", "spin", 0, 999999, (double)hlp_prune, ""}, //history score
-	{"CheckExtensionMinDepth", "spin", 1, 100, (double)chkext_depth, ""},
+	{"CheckExtensionMinDepth", "spin", 1, 100, (double)chkext_depth, ""}, //check extensions min depth
+	{"SEEMaxDepth", "spin", 1, 100, (double)see_depth, ""},
+	{"SEENoisy", "spin", 1, 1000, (double)see_noisy, ""},
+	{"SEEQuiet", "spin", 1, 1000, (double)see_quiet, ""},
+	{"SEEKnight", "spin", 1, 5000, (double)SEE_VALUES[KNIGHT], ""},
+	{"SEEBishop", "spin", 1, 5000, (double)SEE_VALUES[BISHOP], ""},
+	{"SEERook", "spin", 1, 5000, (double)SEE_VALUES[ROOK], ""},
+	{"SEEQueen", "spin", 1, 5000, (double)SEE_VALUES[QUEEN], ""},
+	{"LMPNoImprConst", "spin", 1, 100000, (double)lmp_noimpr_const, ""},
+	{"LMPNoImprLinear", "spin", 1, 100000, (double)lmp_noimpr_linear, ""},
+	{"LMPNoImprQuad", "spin", 1, 100000, (double)lmp_noimpr_quad, ""},
+	{"LMPImprConst", "spin", 1, 100000, (double)lmp_impr_const, ""},
+	{"LMPImprLinear", "spin", 1, 100000, (double)lmp_impr_linear, ""},
+	{"LMPImprQuad", "spin", 1, 100000, (double)lmp_impr_quad, ""},
 #endif
 };
 
@@ -291,8 +304,21 @@ int main(int argc, char** argv)
 			hlp_reduce = uci_options[26].val_float;
 			hlp_prune = uci_options[27].val_float;
 			chkext_depth = uci_options[28].val_float;
+			see_depth = uci_options[29].val_float;
+			see_noisy = uci_options[30].val_float;
+			see_quiet = uci_options[31].val_float;
+			SEE_VALUES[KNIGHT] = uci_options[32].val_float;
+			SEE_VALUES[BISHOP] = uci_options[33].val_float;
+			SEE_VALUES[ROOK] = uci_options[34].val_float;
+			SEE_VALUES[QUEEN] = uci_options[35].val_float;
+			lmp_noimpr_const = uci_options[36].val_float;
+			lmp_noimpr_linear = uci_options[37].val_float;
+			lmp_noimpr_quad = uci_options[38].val_float;
+			lmp_impr_const = uci_options[39].val_float;
+			lmp_impr_linear = uci_options[40].val_float;
+			lmp_impr_quad = uci_options[41].val_float;
 
-			init_lmr();
+			init_search();
 #endif
 		}
 		else if(command == "position")

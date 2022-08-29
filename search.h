@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-// #define TUNING_MODE
+#define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -69,6 +69,15 @@ extern uint32_t hlp_reduce, hlp_prune;
 
 extern uint8_t chkext_depth;
 #define CHKEXT_MINDEPTH chkext_depth
+
+extern uint8_t see_depth;
+extern int16_t see_noisy, see_quiet;
+#define SEE_MAX_DEPTH see_depth
+#define SEE_NOISY see_noisy //*depth^2
+#define SEE_QUIET see_quiet //*depth
+
+#define LMP_MAXDEPTH 9 //cannot be tuned easily! just leaving it as it is
+extern float lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_const, lmp_impr_linear, lmp_impr_quad; //all the params (x10000)
 #else
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
@@ -108,7 +117,7 @@ extern uint8_t chkext_depth;
 
 #define CHKEXT_MINDEPTH 6
 
-//TODO: tune LMR!
+//TODO: tune LMP!
 #define LMP_MAXDEPTH 9 //cannot be tuned easily
 #endif
 

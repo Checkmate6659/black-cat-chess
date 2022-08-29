@@ -3,7 +3,7 @@
 #ifdef TUNING_MODE
 int aspi_margin = 22, max_aspi_margin = 2000, aspi_constant = 39;
 float aspi_mul = 168; //x100
-int rfp_max_depth = 17, rfp_margin = 304, rfp_impr = 146;
+int rfp_max_depth = 17, rfp_margin = 100, rfp_impr = 75;
 int iid_reduction_d = 3;
 int dprune = 2069; //DISABLED
 int nmp_const = 3, nmp_depth = 16, nmp_evalmin = 44, nmp_evaldiv = 509; //evalmin DISABLED
@@ -12,18 +12,26 @@ float lmr_const = 5512, lmr_mul = 0; //x10000; actually the lmr_mul is for log(d
 //TODO: do tests instead of tuning for bools, its not good to tune bools with spsa
 bool lmr_do_pv = true;
 bool lmr_do_impr = true;
-bool lmr_do_chk_kmove = false;
+bool lmr_do_chk_kmove = true;
 bool lmr_do_killer = true;
 uint32_t lmr_history_threshold = 6434;
 
 //Extra LMR parameters, for better LMR
 float lmr_sqrt_mul = 1262, lmr_dist_mul = 882, lmr_depth_mul = 0; //all x10000
 
+//HISTORY LEAF PRUNING REMOVED: THESE VALUES DO NOT MATTER! TODO: clean this up
 bool hlp_do_improving = true; //do history leaf pruning on improving nodes
 uint8_t hlp_movecount = 6; //move count from which we can do it
 uint32_t hlp_reduce = 5000, hlp_prune = 2500;
 
 uint8_t chkext_depth = 6; //check extension minimum depth
+
+uint8_t see_depth = 9; //SEE pruning in main search max depth
+int16_t see_noisy = 19, see_quiet = 64; //in centipawns; noisy: *depth^2 (quad); quiet: *depth (linear)
+
+//LMP parameters (all x10000)
+float lmp_noimpr_const = 30000, lmp_noimpr_linear = 0, lmp_noimpr_quad = 6666;
+float lmp_impr_const = 55000, lmp_impr_linear = 0, lmp_impr_quad = 15556;
 #endif
 
 
@@ -112,8 +120,13 @@ void init_search() //Initialize the late move reduction table
 	
 	for (uint8_t depth = 1; depth < LMP_MAXDEPTH; depth++) //don't need at 0 depth, since it will be unused
 	{
+#ifdef TUNING_MODE
+		lmp_table[depth][0] = std::min((lmp_noimpr_const + lmp_noimpr_linear * depth + lmp_noimpr_quad * depth * depth)/10000., 255.0); //not improving
+		lmp_table[depth][1] = std::min((lmp_impr_const + lmp_impr_linear * depth + lmp_impr_quad * depth * depth)/10000., 255.0); //improving
+#else
 		lmp_table[depth][0] = std::min(3.0 + 3 * depth * depth / 4.5, 255.0); //not improving
 		lmp_table[depth][1] = std::min(5.5 + 7 * depth * depth / 4.5, 255.0); //improving
+#endif
 	}
 }
 
