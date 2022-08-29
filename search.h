@@ -111,6 +111,9 @@ extern uint8_t chkext_depth;
 #define SEE_QUIET 64 //*depth
 
 #define CHKEXT_MINDEPTH 6
+
+//TODO: tune LMR!
+#define LMP_MAXDEPTH 9 //cannot be tuned easily
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)
@@ -126,7 +129,7 @@ extern int8_t repetition_table[RPT_SIZE]; //Repetition table
 extern uint64_t node_count; //node count for benchmarking
 extern bool benchmark; //benchmarking mode: don't panic!
 
-void init_lmr();
+void init_search();
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 

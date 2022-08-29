@@ -37,6 +37,7 @@ uint64_t tt_hits = 0;
 // uint64_t collisions = 0;
 
 uint8_t lmr_table[MAX_DEPTH][MAX_MOVE];
+uint8_t lmp_table[LMP_MAXDEPTH][2];
 
 int16_t eval_stack[MAX_DEPTH];
 
@@ -75,7 +76,7 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 //LMR test results:
 //http://www.open-chess.org/viewtopic.php?f=3&t=435
 //http://www.talkchess.com/forum3/viewtopic.php?t=65273
-void init_lmr() //Initialize the late move reduction table
+void init_search() //Initialize the late move reduction table
 {
 	for (uint8_t depth = 0; depth < MAX_DEPTH; depth++) //prev ply
 		for (uint8_t move = 0; move < MAX_MOVE; move++)
@@ -107,6 +108,12 @@ void init_lmr() //Initialize the late move reduction table
 				lmr_table[depth][move] = (uint8_t)(LMR_CONST + log((double)depth)*log((double)move)*LMR_MUL + (sqrt((double)depth - 1) + sqrt((double)move - 1))*LMR_SQRT_MUL + sqrt(depth*depth + move*move)*LMR_DIST_MUL + depth*LMR_DEPTH_MUL); //Max-tunable LMR
 			}
 		}
+	
+	for (uint8_t depth = 1; depth < LMP_MAXDEPTH; depth++) //don't need at 0 depth, since it will be unused
+	{
+		lmp_table[depth][0] = std::min(2.5 + 2 * depth * depth / 4.5, 255.0);
+		lmp_table[depth][1] = std::min(4.0 + 4 * depth * depth / 4.5, 255.0);
+	}
 }
 
 uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)

@@ -118,7 +118,7 @@ const std::string benchfens[50] = {
 int main(int argc, char** argv)
 {
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
-	init_lmr(); //Fill LMR table
+	init_search(); //Fill LMR table
 
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
