@@ -118,7 +118,7 @@ extern uint8_t chkext_depth;
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)
 // #define LMR_THRESHOLD 2 //search first 2 legal moves with full depth
-#define LMR_MAXSCORE SCORE_CHECK //do not reduce moves at or above this score (NOT IMPLEMENTED; didn't matter, maybe that will change later)
+#define LOUD_MOVE SCORE_CHECK //do not reduce moves at or above this score (NOT IMPLEMENTED; didn't matter, maybe that will change later)
 
 
 typedef uint32_t RPT_INDEX; //Repetition table index

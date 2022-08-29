@@ -317,6 +317,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			continue;
 		}
 
+		//Late move pruning: skip late quiet moves
+		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving])
+		{
+			unmake_move(stm, curmove, res); //skip move
+			continue;
+		}
+
 		//SEE pruning at shallow depth
 		int16_t seeMargin = (curmove.flags & F_CAPT) ? SEE_NOISY * depth * depth : SEE_QUIET * depth; //compute SEE margin
 		if (depth <= SEE_MAX_DEPTH && SEE_VALUES[res.piece & PTYPE] + seeMargin < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
@@ -366,7 +373,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
 
-		if (!incheck && curmove.score < LMR_MAXSCORE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
+		if (!incheck && curmove.score < LOUD_MOVE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 		else lmr = 0; //don't do LMR in check or on tactical moves
 
 		node_count++;
