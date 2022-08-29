@@ -165,7 +165,7 @@ bool nullmove_safe(uint8_t stm)
 }
 
 //TODO: implement draw by insufficient material
-int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply)
+int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, int8_t node_type, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
 		return 0; //ran out of time, or keystroke: interrupt search immediately
@@ -225,7 +225,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		return qsearch(stm, alpha, beta);
 	}
 
-	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (IIR)
+	if (!entry.flag && !node_type && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (IIR)
 
 	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
 
@@ -250,7 +250,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t lmr_move_count = 0;
 
 	if (incheck && depth > CHKEXT_MINDEPTH) depth++; //check extension
-	else if (beta - alpha == 1) //Non-PV node, not extended in this node (TODO: not extended in entire line)
+	else if (node_type) //Non-PV node, not extended in this node (TODO: not extended in entire line)
 	{
 		//Reverse futility pruning/static null move pruning (TODO: try with !incheck)
 		if (/* depth <= RFP_MAX_DEPTH */ true											//RFP max depth shown to be useless! uncapped RFP
@@ -272,7 +272,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (nullmove <= 0 && !incheck && nullmove_safe(stm)) //No NMH when in check or when in late endgame; also need to have enough depth
 		{
 			//Try search with null move (enemy's turn, ply + 1)
-			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
+			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, -node_type, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
 
 			// if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
 
@@ -340,12 +340,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
-		if(lmr_do_pv) lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		if(lmr_do_pv) lmr += !node_type; //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		if(lmr_do_impr) lmr += !improving; //reduce less for improving
 		if(lmr_do_chk_kmove) lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		if(lmr_do_killer) lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #else //king moves in check, very suspicious
-		lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		lmr += !node_type; //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		lmr += !improving; //reduce less for improving
 		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
@@ -353,7 +353,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
 		//history leaf pruning/reduction
-		if (beta - alpha == 1 && !incheck && legal_move_count >= HLP_MOVECOUNT //make sure its not a PV node, we're not in check, and a move has been found
+		if (node_type && !incheck && legal_move_count >= HLP_MOVECOUNT //make sure its not a PV node, we're not in check, and a move has been found
 #ifdef TUNING_MODE
 		&& (!improving || hlp_do_improving)
 #else
@@ -385,18 +385,22 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if (legal_move_count /* lmr */) //LMR implementation, merged with PVS
 		{
 			//search with null window and potentially reduced depth
-			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1 - lmr, (curmove.flags & F_DPP) ? curmove.tgt : -2, -alpha - 1, -alpha, (node_type == CUT_NODE) ? ALL_NODE : CUT_NODE, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 			// if (panic) //check if we ran out of time
 			// {
 			// 	unmake_move(stm, curmove, res); //we have to unmake the moves!
 			// 	return 0;
 			// }
 
-			if (eval > alpha) //beat alpha: re-search with full window and no reduction
-				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			if ((eval > alpha && eval < beta) //beat alpha: re-search with full window and no reduction
+			|| (node_type == PV_NODE && eval == beta && beta == alpha+1))
+			{
+				eval -= eval == alpha + 1; //If not a real lower bound, decrement eval
+				eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -eval, -node_type, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			}
 		}
 		else
-			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
+			eval = -search(stm ^ ENEMY, depth - 1, (curmove.flags & F_DPP) ? curmove.tgt : -2, -beta, -alpha, -node_type, hash ^ curmove_hash, nullmove - 1, ply + 1, updated_last_zeroing_ply);
 
 		legal_move_count++; //only implement legal_move_count here, so that its equal to 0 on the first move in the PVS condition
 
@@ -462,9 +466,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
-	else if (alpha > old_alpha)
+	else if (alpha > old_alpha) //We have beaten alpha
 		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
-	else
+	else if (node_type == CUT_NODE) //Fail low: only store if not Cut-node, otherwise value is uncertain
 		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
@@ -577,7 +581,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 				}
 			}
 
-			eval = search(board_stm, depth, board_last_target, alpha, beta,
+			eval = search(board_stm, depth, board_last_target, alpha, beta, PV_NODE,
 				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 				1, //don't allow NMP at the root, but allow it on subsequent plies
 				0, -half_move_clock);
