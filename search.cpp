@@ -352,26 +352,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 #endif
 		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
-		//history leaf pruning/reduction
-		if (beta - alpha == 1 && !incheck && legal_move_count >= HLP_MOVECOUNT //make sure its not a PV node, we're not in check, and a move has been found
-#ifdef TUNING_MODE
-		&& (!improving || hlp_do_improving)
-#else
-		&& !improving
-#endif
-		)
-		{
-			if (curmove.score < SCORE_QUIET + HLP_REDUCE) //poor history score
-			{
-				lmr++; //reduce moves with poor histories
-				if (curmove.score < SCORE_QUIET + HLP_PRUNE) //very poor history score
-				{
-					unmake_move(stm, curmove, res); //history leaf pruning
-					continue;
-				}
-			}
-		}
-
 		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
 
 		if (!incheck && curmove.score < LOUD_MOVE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves

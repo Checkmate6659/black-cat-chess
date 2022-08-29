@@ -102,10 +102,6 @@ extern uint8_t chkext_depth;
 
 #define LMR_HISTORY_THRESHOLD 6434
 
-#define HLP_MOVECOUNT 100 //HLP not gaining; retry tuning it with continuation history
-#define HLP_REDUCE 0
-#define HLP_PRUNE 0
-
 #define SEE_MAX_DEPTH 9 //TODO: tune!
 #define SEE_NOISY 19 //*depth^2
 #define SEE_QUIET 64 //*depth
