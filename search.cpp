@@ -319,7 +319,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		//Late move pruning: skip late quiet moves
-		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving])
+		if (ply && curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving])
 		{
 			unmake_move(stm, curmove, res); //skip move
 			continue;
@@ -412,6 +412,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			{
 				alpha = eval;
 
+				pv_table[ply][ply] = curmove; //update principal variation
+				uint8_t next_ply = ply + 1;
+				while(pv_length[ply + 1] > next_ply) {
+					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+					next_ply++;
+				}
+				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
+
 				uint16_t move_id = MOVE_ID(curmove);
 				if (curmove.flags < F_CAPT)
 				{
@@ -443,14 +451,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					// return beta; //FAIL HARD
 					return eval;  //FAIL SOFT
 				}
-
-				pv_table[ply][ply] = curmove; //update principal variation
-				uint8_t next_ply = ply + 1;
-				while(pv_length[ply + 1] > next_ply) {
-					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-					next_ply++;
-				}
-				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 			}
 		}
 	}
@@ -459,7 +459,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	if (legal_move_count == 0) //the position has no legal moves: it is either checkmate or stalemate
 		return incheck ? MATE_SCORE + ply : STALEMATE; //king in check = checkmate (we lose); otherwise stalemate
-	
+
+	if (!ply && alpha == old_alpha) //root failed low during aspirated search
+	{
+		//update PV for if we don't have time to search an extra ply
+		pv_table[0][0] = best_move; //update principal variation's first move
+		pv_length[ply] = 1; //update PV length
+	}
+
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha)
