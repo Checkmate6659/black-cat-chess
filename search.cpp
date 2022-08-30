@@ -135,6 +135,15 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth)
 	if (!depth) //out of depth: return
 		return 1;
 
+
+	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF; //is the king under attack?
+	if (incheck == !(attack_table[plist[(stm & 16) ^ 16] ^ stm ^ ENEMY])) //attack table check not giving good result
+	{
+		printf("BAD CHECK %x %x %d\n", incheck, attack_table[plist[(stm & 16) ^ 16] ^ stm ^ ENEMY], depth);
+		print_board_full(board);
+	}
+
+
 	//iterate through all legal moves
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
@@ -247,6 +256,13 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF; //is the king under attack?
 	bool improving = false;
+
+	if (incheck == !(attack_table[plist[(stm & 16) ^ 16] ^ stm ^ ENEMY])) //attack table check not giving good result
+	{
+		printf("BAD CHECK %x %x %d\n", incheck, attack_table[plist[(stm & 16) ^ 16] ^ stm ^ ENEMY], depth);
+		print_board_full(board);
+	}
+
 
 	int16_t static_eval = evaluate(stm);
 	if (!incheck && ply >= 2) //if in check, improving stays false; also don't do this close to the root (otherwise buffer overflow)
