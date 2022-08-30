@@ -379,6 +379,74 @@ uint8_t sq_attacked(uint8_t target, uint8_t attacker)
 }
 
 
+//Update attacks: "place" a piece on the board
+inline void update_atk_place(uint8_t piece, uint8_t plist_idx, uint8_t sq)
+{
+	if (!piece || plist[plist_idx] == 0xFF) return; //dirty! i shouldn't need both
+
+	uint16_t mask = 1 << (plist_idx & 15); //Mask to store
+	uint8_t ptype = piece & PTYPE; //Piece type
+	uint8_t color = piece & ENEMY; //Piece color
+	uint8_t offset_start = offset_idx[ptype];
+	uint8_t offset_end = offset_start + noffsets[ptype];
+	offset_start += ptype < 3; //skip forward pawn movement
+
+	for (uint8_t i = offset_start; i < offset_end; i++)
+	{
+		int8_t offset = offsets[i]; //current offset
+		uint8_t cur_sq = sq + offset;
+		if (cur_sq & OFFBOARD) continue; //square is off the board: do not mark as attacked!
+
+		attack_table[cur_sq ^ color] |= mask;
+
+		if (ptype >= 5) //sliding piece
+		{
+			cur_sq += offset;
+			while(!(board[cur_sq] || (cur_sq & OFFBOARD)))
+			{
+				attack_table[cur_sq ^ color] |= mask; //mark all those squares as attacked, until we hit an enemy piece or the edge of the board
+				cur_sq += offset;
+			}
+
+			if (!(cur_sq & OFFBOARD)) attack_table[cur_sq ^ color] |= mask; //square on the board = a piece is attacked/defended: mark it as such
+		}
+	}
+}
+
+//Update attacks: "remove" a piece from the board
+inline void update_atk_remove(uint8_t piece, uint8_t plist_idx, uint8_t sq)
+{
+	if (!piece || plist[plist_idx] == 0xFF) return; //dirty! i shouldnt need both!
+
+	uint16_t mask = ~(1 << (plist_idx & 15)); //Mask to AND with: clear piece bit
+	uint8_t ptype = piece & PTYPE; //Piece type
+	uint8_t color = piece & ENEMY; //Piece color
+	uint8_t offset_start = offset_idx[ptype];
+	uint8_t offset_end = offset_start + noffsets[ptype];
+	offset_start += ptype < 3; //skip forward pawn movement
+
+	for (uint8_t i = offset_start; i < offset_end; i++)
+	{
+		int8_t offset = offsets[i]; //current offset
+		uint8_t cur_sq = sq + offset;
+		if (cur_sq & OFFBOARD) continue; //square is off the board: do not apply mask!
+
+		attack_table[cur_sq ^ color] &= mask;
+
+		if (ptype >= 5) //sliding piece
+		{
+			cur_sq += offset;
+			while(!(board[cur_sq] || (cur_sq & OFFBOARD)))
+			{
+				attack_table[cur_sq ^ color] &= mask; //mark all those squares as non-attacked, until we hit an enemy piece or the edge of the board
+				cur_sq += offset;
+			}
+
+			if (!(cur_sq & OFFBOARD)) attack_table[cur_sq ^ color] &= mask; //square on the board = a piece is no longer attacked/defended: mark it as such
+		}
+	}
+}
+
 void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 {
 	mlist->count = 0; //just being extra-safe here, and diminishing code size
@@ -614,6 +682,9 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 	//Contains the piece type, and then its index in the big piece list
 	MOVE_RESULT result = MOVE_RESULT{ board[move.tgt], board[move.tgt | 8], board[move.src] };
 
+	update_atk_remove(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
+	update_atk_remove(board[move.src], plist[board[move.src | 8]], move.src);
+
 	// result.prev_state = board[move.src]; //store old piece type (for promotions and recovery of castling rights)
 
 	//move the piece
@@ -629,9 +700,13 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 
 	if (move.flags & F_EP) //EN PASSANT
 	{
+		// update_atk_place(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
+
 		//calculating the new target
 		//maybe we could do this more efficiently?
 		move.tgt -= (stm - 12) << 2;
+
+		// update_atk_remove(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
 
 		//recalculate the result
 		result = MOVE_RESULT{ board[move.tgt], board[move.tgt | 8], result.prev_state };
@@ -643,7 +718,7 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 	{
 		if (result.piece) plist[result.plist_idx] = -1; //Signal captured piece by off-the-board coordinate in piece list
 
-		if (move.flags & F_CASTLE)
+		if (move.flags & F_CASTLE) //TODO: update attack tables here too!
 		{
 			if (move.flags & F_KCASTLE) //WARNING: only implemented for white so far!
 			{
@@ -667,7 +742,11 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 			board[move.tgt] &= 0b111000; //keep the color bits, but clear the piece bits
 			board[move.tgt] |= move.promo; //change the piece!
 		}
+
+		// update_atk_place(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
 	}
+
+	update_atk_place(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
 
 	return result;
 }
@@ -677,6 +756,8 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 	//Information to use:
 	//MOVE = {source, target, flags, promo, score}
 	//MOVE_RESULT = {piece type, plist index, prev_state}
+
+	update_atk_remove(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
 
 	//1st half
 	board[move.tgt] = move_result.prev_state; //restore the piece type (test)
@@ -720,6 +801,9 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 			plist[board[move.src + 4]] = move.src - 4; //same goes here
 		}
 	}
+
+	update_atk_place(board[move.src], plist[board[move.src | 8]], move.src);
+	update_atk_place(board[move.tgt], plist[board[move.tgt | 8]], move.tgt);
 }
 
 MOVE get_smallest_attacker_move(uint8_t stm, uint8_t square)
