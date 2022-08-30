@@ -68,6 +68,8 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
+uint16_t attack_table[128];
+
 int16_t SEE_VALUES[] = {0, 100, 100, 400, 16383, 450, 675, 1300}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
 
@@ -110,7 +112,16 @@ void print_board_full(uint8_t* b)
 		if ((i & 7) == 7) std::cout << std::endl;
 	}
 
-	std::cout << "\n\n";
+	std::cout << "\n";
+	
+	uint32_t checksum = 0;
+	for (uint8_t i = 0; i < 128; i++)
+	{
+		checksum = (checksum << 11) | (checksum >> 21); //rotate left by 11 bits
+		checksum ^= attack_table[i];
+	}
+
+	printf("%8x\n", checksum);
 }
 
 void print_move(MOVE move)
@@ -123,7 +134,6 @@ void print_move(MOVE move)
 
 }
 
-//TODO: implement halfmove counter
 void load_fen(std::string fen)
 {
 	char position[80];
@@ -271,9 +281,60 @@ void load_fen(std::string fen)
 	{
 		board_last_target = enpassant[0] + (board_stm << 1) - 0x41;
 	}
+
+	gen_attack_tables();
 }
 
+//Generate attack tables: use at root, when loading a new position
+void gen_attack_tables()
+{
+	for (uint8_t plist_idx = 0; plist_idx < 32; plist_idx++)
+	{
+		uint8_t atk_sq = plist[plist_idx]; //Square of the attacking piece
+		if (atk_sq == 0xFF) continue; //Piece has been captured: continue
+		uint8_t ptype = board[atk_sq] & PTYPE; //The piece type
+		uint8_t side = board[atk_sq] & ENEMY;
 
+		for (uint8_t sq = 0; sq < 120; sq++) //iterate through all squares
+		{
+			if (sq & 8) continue; //skip invalid squares
+
+			//Index and mask
+			uint8_t atk_index = sq ^ side;
+			uint16_t mask = 1 << (plist_idx & 15);
+
+			//Relation and ray
+			uint8_t rel = 0x77 + sq - atk_sq;
+			uint8_t ray = RAYS[rel] & RAYMSK[ptype];
+
+			if (!ray) continue; //no way that's attacking!
+
+			if (ptype < 5) //Square is under attack by a leaper
+			{
+				attack_table[atk_index] |= mask;
+				continue;
+			}
+
+			//now we have to iterate through ALL the squares in that direction!
+			int8_t offset = RAY_OFFSETS[rel];
+
+			uint8_t cur_sq = atk_sq - offset;
+
+			while (cur_sq != sq) //don't have to check for off-the-board, since the ray can only be in there
+			{
+				// if (cur_sq & OFFBOARD) printf("off board\n");
+				if (board[cur_sq]) break; //Piece in the way: attack is blocked
+
+				cur_sq -= offset;
+			}
+
+			//If didn't stop on a blocker, square is attacked by slider
+			if(!board[cur_sq]) attack_table[atk_index] |= mask;
+		}
+	}
+}
+
+//TODO: optimize with attack tables when they are done! Base bench: 1152323 nodes; ~1.5Mnps
 uint8_t sq_attacked(uint8_t target, uint8_t attacker)
 {
 	//quite a lot of extra instructions for doing black first white second in the piece lists

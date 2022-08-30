@@ -130,6 +130,7 @@ const std::string benchfens[50] = {
 
 int main(int argc, char** argv)
 {
+	gen_attack_tables(); //Fill attack tables
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_search(); //Fill LMR table
 

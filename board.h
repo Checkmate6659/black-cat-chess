@@ -91,6 +91,7 @@ void print_move(MOVE move); //Print a move.
 
 extern uint8_t board[128];
 extern uint8_t plist[32];
+extern uint16_t attack_table[128]; //Piece sets; indexing: attack_table[sq ^ side]
 extern uint8_t board_stm;
 extern uint8_t board_last_target;
 extern int8_t half_move_clock;
@@ -101,6 +102,7 @@ const uint32_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B
 
 extern int16_t SEE_VALUES[];
 
+void gen_attack_tables(); //Generate attack tables
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
 
 void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target); //Generating all moves
