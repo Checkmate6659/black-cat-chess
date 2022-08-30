@@ -288,12 +288,14 @@ void load_fen(std::string fen)
 //Generate attack tables: use at root, when loading a new position
 void gen_attack_tables()
 {
+	for (uint8_t i = 0; i < 128; i++) attack_table[i] = 0;
+
 	for (uint8_t plist_idx = 0; plist_idx < 32; plist_idx++)
 	{
 		uint8_t atk_sq = plist[plist_idx]; //Square of the attacking piece
 		if (atk_sq == 0xFF) continue; //Piece has been captured: continue
 		uint8_t ptype = board[atk_sq] & PTYPE; //The piece type
-		uint8_t side = board[atk_sq] & ENEMY;
+		uint8_t side = board[atk_sq] & ENEMY; //The side of the piece
 
 		for (uint8_t sq = 0; sq < 120; sq++) //iterate through all squares
 		{
@@ -328,8 +330,8 @@ void gen_attack_tables()
 				cur_sq -= offset;
 			}
 
-			//If didn't stop on a blocker, square is attacked by slider
-			if(!board[cur_sq]) attack_table[atk_index] |= mask;
+			//If didn't stop early, square is attacked by slider
+			if(cur_sq == sq) attack_table[atk_index] |= mask;
 		}
 	}
 }
