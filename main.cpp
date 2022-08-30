@@ -62,12 +62,12 @@ OPTION uci_options[] = {
 	{"SEEBishop", "spin", 1, 5000, (double)SEE_VALUES[BISHOP], ""},
 	{"SEERook", "spin", 1, 5000, (double)SEE_VALUES[ROOK], ""},
 	{"SEEQueen", "spin", 1, 5000, (double)SEE_VALUES[QUEEN], ""},
-	{"LMPNoImprConst", "spin", 1, 100000, (double)lmp_noimpr_const, ""},
-	{"LMPNoImprLinear", "spin", 1, 100000, (double)lmp_noimpr_linear, ""},
-	{"LMPNoImprQuad", "spin", 1, 100000, (double)lmp_noimpr_quad, ""},
-	{"LMPImprConst", "spin", 1, 100000, (double)lmp_impr_const, ""},
-	{"LMPImprLinear", "spin", 1, 100000, (double)lmp_impr_linear, ""},
-	{"LMPImprQuad", "spin", 1, 100000, (double)lmp_impr_quad, ""},
+	{"LMPNoImprConst", "spin", 0, 100000, (double)lmp_noimpr_const, ""},
+	{"LMPNoImprLinear", "spin", 0, 100000, (double)lmp_noimpr_linear, ""},
+	{"LMPNoImprQuad", "spin", 0, 100000, (double)lmp_noimpr_quad, ""},
+	{"LMPImprConst", "spin", 0, 100000, (double)lmp_impr_const, ""},
+	{"LMPImprLinear", "spin", 0, 100000, (double)lmp_impr_linear, ""},
+	{"LMPImprQuad", "spin", 0, 100000, (double)lmp_impr_quad, ""},
 #endif
 };
 
