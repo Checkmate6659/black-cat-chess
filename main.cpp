@@ -9,7 +9,7 @@
 
 // #define __TEST_VERSION__
 // #define __TEST_NAME__ ""
-#define __ENGINE_VERSION__ "2.3-dev"
+#define __ENGINE_VERSION__ "2.3"
 
 
 typedef struct
