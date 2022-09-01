@@ -191,6 +191,26 @@ const int16_t *eg_psqt[] = {
     eg_queen_table,
 };
 
+//Middlegame pawn-safe mobility scores
+const int16_t mg_mobility[8][28] = {
+    {}, {}, {}, //empty space and pawns (not evaluated: all zeroes)
+    {-62, -53, -12, -3, 3, 12, 21, 28, 37}, //knight
+    {}, //king (not evaluated: all zeroes)
+    {-47, -20, 14, 29, 39, 53, 53, 60, 62, 69, 78, 83, 91, 96}, //bishop
+    {-60, -24, 0, 3, 4, 14, 20, 30, 41, 41, 41, 45, 57, 58, 67}, //rook
+    {-29, -16, -8, -8, 18, 25, 23, 37, 41, 54, 65, 68, 69, 70, 70, 70, 71, 72, 74, 76, 90, 104, 105, 106, 112, 114, 114, 119} //queen
+};
+
+//Endgame pawn-safe mobility scores
+const int16_t eg_mobility[8][28] = {
+    {}, {}, {}, //empty space and pawns (not evaluated: all zeroes)
+    {-79, -57, -31, -17, 7, 13, 16, 21, 26}, //knight
+    {}, //king (not evaluated: all zeroes)
+    {-59, -25, -8, 12, 21, 40, 56, 58, 65, 72, 78, 87, 88, 98}, //bishop
+    {-82, -15, 17, 43, 72, 100, 102, 122, 133, 139, 153, 160, 165, 170, 175}, //rook
+    {-49, -29, -8, 17, 39, 54, 59, 73, 76, 95, 95, 101, 124, 128, 132, 133, 136, 140, 147, 149, 153, 169, 171, 171, 178, 185, 187, 221} //queen
+};
+
 //0x88 difference King area table (access: (0x77 + King square - piece square) & piece color)
 int8_t king_area[239] = {}; //initalize king area table to all zeroes
 
@@ -273,6 +293,8 @@ int16_t evaluate(uint8_t stm)
         midgame_eval += perspective * (mg_piece_values[piece & PTYPE] + mg_psqt[piece & PTYPE][psqt_index]); //midgame material/PSQT
         endgame_eval += perspective * (eg_piece_values[piece & PTYPE] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
 
+        uint8_t mobility = 0; //number of safe moves/attacks this piece has (pawns are not evaluated)
+
         //Generate all attacks of this piece to compute king safety, mobility and threats
         //TODO: do mobility and threats
         uint8_t offset_start = offset_idx[ptype];
@@ -286,6 +308,20 @@ int16_t evaluate(uint8_t stm)
 
             while (!(cur_sq & OFFBOARD)) //loop over ray
             {
+                //Safe mobility evaluation: only if no enemy pawn is attacking cur_sq
+                uint8_t square_in_front = cur_sq - 16 * cur_persp; //Square in front of the piece
+                bool unsafe = false;
+                uint8_t enemy_pawn = ((piece & ENEMY) ^ ENEMY) | (1 + cur_persp == -1); //Enemy pawn's code
+
+                if (square_in_front < 128) //square is on the board: pawns could be attacking
+                {
+                    unsafe |= ((square_in_front & 7) && (board[square_in_front - 1] & ~MOVED) == enemy_pawn); //square to the left
+                    unsafe |= ((square_in_front & 7) != 7 && (board[square_in_front + 1] & ~MOVED) == enemy_pawn); //square to the right
+                }
+
+                if (!unsafe) //safe square
+                    mobility++; //an extra move of this piece is safe
+
                 //king safety evaluation: only applied in middlegame
                 if (piece & king_area[0x77 + enemy_king - cur_sq]) //attacking the enemy king
                     midgame_eval += king_attack[ptype] * cur_persp;
@@ -298,6 +334,9 @@ int16_t evaluate(uint8_t stm)
                 cur_sq += offset; //NEXT!
             }
         }
+
+        midgame_eval += mg_mobility[ptype][mobility] * cur_persp;
+        endgame_eval += eg_mobility[ptype][mobility] * cur_persp;
     }
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
