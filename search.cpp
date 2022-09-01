@@ -340,7 +340,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		//SEE pruning at shallow depth
 		int16_t seeMargin = (curmove.flags & F_CAPT) ? SEE_NOISY * depth * depth : SEE_QUIET * depth; //compute SEE margin
-		if (depth <= SEE_MAX_DEPTH && SEE_VALUES[res.piece & PTYPE] + seeMargin < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
+		if (ply && depth <= SEE_MAX_DEPTH && SEE_VALUES[res.piece & PTYPE] + seeMargin < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
 		{
 			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
 			continue;
@@ -405,14 +405,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			{
 				alpha = eval;
 
-				pv_table[ply][ply] = curmove; //update principal variation
-				uint8_t next_ply = ply + 1;
-				while(pv_length[ply + 1] > next_ply) {
-					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
-					next_ply++;
-				}
-				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
-
 				uint16_t move_id = MOVE_ID(curmove);
 				if (curmove.flags < F_CAPT)
 				{
@@ -444,6 +436,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					// return beta; //FAIL HARD
 					return eval;  //FAIL SOFT
 				}
+
+				pv_table[ply][ply] = curmove; //update principal variation
+				uint8_t next_ply = ply + 1;
+				while(pv_length[ply + 1] > next_ply) {
+					pv_table[ply][next_ply] = pv_table[ply + 1][next_ply];
+					next_ply++;
+				}
+				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 			}
 		}
 	}
@@ -559,7 +559,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 		//Aspiration window loop: do-while to avoid skipping search entirely
 		do {
-			while(eval < alpha || eval > beta)
+			while(eval <= alpha || eval >= beta)
 			{
 				if (depth >= 4)
 				{
@@ -581,7 +581,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
 				1, //don't allow NMP at the root, but allow it on subsequent plies
 				0, -half_move_clock);
-		} while(eval < alpha || eval > beta);
+		} while(eval <= alpha || eval >= beta);
 
 
 		clock_t end = clock();
