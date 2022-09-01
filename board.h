@@ -99,6 +99,9 @@ const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 const uint32_t SCORE_PROMO_CAPT[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};
 
+extern const uint8_t noffsets[], offset_idx[];
+extern const int8_t offsets[];
+
 extern int16_t SEE_VALUES[];
 
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker

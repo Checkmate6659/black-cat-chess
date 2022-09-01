@@ -194,6 +194,26 @@ const int16_t *eg_psqt[] = {
 //0x88 difference King area table (access: (0x77 + King square - piece square) & piece color)
 int8_t king_area[239] = {}; //initalize king area table to all zeroes
 
+//Scores for each square attacked by each piece type
+uint8_t king_attack[] = {0,
+    15, 15, //pawn
+    25, //knight
+    20, //king
+    25, //bishop
+    30, //rook
+    40, //queen
+};
+
+//Scores for each square defended by each piece type
+uint8_t king_defense[] = {0,
+    25, 25, //pawn
+    25, //knight
+    0, //king
+    15, //bishop
+    5, //rook
+    0, //queen
+};
+
 //Initialize evaluation tables
 void init_eval()
 {
@@ -217,28 +237,66 @@ void init_eval()
 int16_t evaluate(uint8_t stm)
 {
     uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
-    int16_t midgame_psqt = 0;
-    int16_t endgame_psqt = 0;
+    int16_t midgame_eval = 0;
+    int16_t endgame_eval = 0;
 
-    //material/PSQT/game phase loop
+    //king squares
+    uint8_t enemy_king = plist[16]; //starting with black pieces: white is the enemy
+    uint8_t friendly_king = plist[0]; //and black is the friendly king
+
+    //evaluation loop
     for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
     {
+        if (i == 16) //we got to the white king: friendly and enemy kings are switched (compiler optimize this pls)
+        {
+            uint8_t temp = friendly_king;
+            friendly_king = enemy_king;
+            enemy_king = temp;
+        }
+
         uint8_t sq = plist[i];
         if (sq == 0xFF) continue;
         
         uint8_t piece = board[sq];
+        uint8_t ptype = piece & PTYPE;
 
-        phase += game_phase[piece & PTYPE]; //add to the game phase
+        phase += game_phase[ptype]; //add to the game phase
 
         uint8_t psqt_index = sq ^ (piece & 16) * 7;
         int16_t perspective = (piece & 16) ? -1 : 1;
 
-        midgame_psqt += perspective * (mg_piece_values[piece & PTYPE] + mg_psqt[piece & PTYPE][psqt_index]); //midgame material/PSQT
-        endgame_psqt += perspective * (eg_piece_values[piece & PTYPE] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
+        midgame_eval += perspective * (mg_piece_values[piece & PTYPE] + mg_psqt[piece & PTYPE][psqt_index]); //midgame material/PSQT
+        endgame_eval += perspective * (eg_piece_values[piece & PTYPE] + eg_psqt[piece & PTYPE][psqt_index]); //endgame material/PSQT
+
+        //Generate all attacks of this piece to compute king safety, mobility and threats
+        //TODO: do mobility and threats
+        uint8_t offset_start = offset_idx[ptype];
+        uint8_t offset_end = offset_start + noffsets[ptype];
+        offset_start += ptype < 3; //remove forward pawn pushes, since they are NOT attacks
+
+        for (i = offset_start; i < offset_end; i++) //loop over piece directions
+        {
+            int8_t offset = offsets[i];
+            uint8_t cur_sq = sq + offset;
+            
+            while (!(cur_sq & OFFBOARD)) //loop over ray
+            {
+                //king safety evaluation: only applied in middlegame
+                if (piece & king_area[0x77 + enemy_king - cur_sq]) //attacking the enemy king
+                    midgame_eval += king_attack[ptype];
+                if (piece & king_area[0x77 + friendly_king - cur_sq]) //defending the friendly king
+                    midgame_eval += king_defense[ptype];
+
+                if (ptype < 5) break; //leaper
+                if (board[sq]) break; //square occupied: last iteration was attack/defense of a piece
+
+                cur_sq += offset; //NEXT!
+            }
+        }
     }
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
-    int16_t psqt_eval = (midgame_psqt * phase + endgame_psqt * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
+    int16_t psqt_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
     return psqt_eval * ((stm & BLACK) ? -1 : 1);
 }
