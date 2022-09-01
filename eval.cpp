@@ -240,6 +240,9 @@ int16_t evaluate(uint8_t stm)
     int16_t midgame_eval = 0;
     int16_t endgame_eval = 0;
 
+    //current piece's perspective
+    int8_t cur_persp = -1; //starting with black pieces
+
     //king squares
     uint8_t enemy_king = plist[16]; //starting with black pieces: white is the enemy
     uint8_t friendly_king = plist[0]; //and black is the friendly king
@@ -247,8 +250,10 @@ int16_t evaluate(uint8_t stm)
     //evaluation loop
     for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
     {
-        if (i == 16) //we got to the white king: friendly and enemy kings are switched (compiler optimize this pls)
+        if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
         {
+            cur_persp = 1; //switch to white's perspective
+
             uint8_t temp = friendly_king;
             friendly_king = enemy_king;
             enemy_king = temp;
@@ -274,21 +279,21 @@ int16_t evaluate(uint8_t stm)
         uint8_t offset_end = offset_start + noffsets[ptype];
         offset_start += ptype < 3; //remove forward pawn pushes, since they are NOT attacks
 
-        for (i = offset_start; i < offset_end; i++) //loop over piece directions
+        for (uint8_t o_idx = offset_start; o_idx < offset_end; o_idx++) //loop over piece directions
         {
-            int8_t offset = offsets[i];
+            int8_t offset = offsets[o_idx];
             uint8_t cur_sq = sq + offset;
-            
+
             while (!(cur_sq & OFFBOARD)) //loop over ray
             {
                 //king safety evaluation: only applied in middlegame
                 if (piece & king_area[0x77 + enemy_king - cur_sq]) //attacking the enemy king
-                    midgame_eval += king_attack[ptype];
+                    midgame_eval += king_attack[ptype] * cur_persp;
                 if (piece & king_area[0x77 + friendly_king - cur_sq]) //defending the friendly king
-                    midgame_eval += king_defense[ptype];
+                    midgame_eval += king_defense[ptype] * cur_persp;
 
                 if (ptype < 5) break; //leaper
-                if (board[sq]) break; //square occupied: last iteration was attack/defense of a piece
+                if (board[cur_sq]) break; //square occupied: last iteration was attack/defense of a piece
 
                 cur_sq += offset; //NEXT!
             }
