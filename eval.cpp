@@ -191,7 +191,29 @@ const int16_t *eg_psqt[] = {
     eg_queen_table,
 };
 
+//0x88 difference King area table (access: (0x77 + King square - piece square) & piece color)
+int8_t king_area[239] = {}; //initalize king area table to all zeroes
 
+//Initialize evaluation tables
+void init_eval()
+{
+    //king's square: check
+    king_area[0x77] = WHITE | BLACK;
+
+    //king ring
+    for (uint8_t offset : {0x01, -0x01, 0x10, -0x10, -0x11, -0x0F, 0x11, 0x0F})
+        king_area[0x77 + offset] = WHITE | BLACK;
+    
+    //area in front of the kings, for both colors
+    //squares in front of Black king are further down and vice versa
+    for (uint8_t offset : {0x1F, 0x20, 0x21})
+    {
+        king_area[0x77 + offset] = BLACK;
+        king_area[0x77 - offset] = WHITE;
+    }
+}
+
+//Evaluation function
 int16_t evaluate(uint8_t stm)
 {
     uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)

@@ -4,12 +4,13 @@
 
 #include "board.h"
 #include "search.h"
+#include "eval.h"
 #include "tt.h"
 #include "time_manager.h"
 
 // #define __TEST_VERSION__
 // #define __TEST_NAME__ ""
-#define __ENGINE_VERSION__ "2.3"
+#define __ENGINE_VERSION__ "2.4-dev"
 
 
 typedef struct
@@ -132,6 +133,7 @@ int main(int argc, char** argv)
 {
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_search(); //Fill LMR table
+	init_eval();
 
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{

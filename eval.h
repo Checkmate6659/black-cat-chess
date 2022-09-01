@@ -11,6 +11,8 @@
 
 extern const int16_t mg_piece_values[], eg_piece_values[];
 extern const uint8_t game_phase[];
+
+void init_eval();
 int16_t evaluate(uint8_t stm);
 
 #endif
