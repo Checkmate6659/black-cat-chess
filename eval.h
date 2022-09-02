@@ -12,7 +12,7 @@
 extern const int16_t mg_piece_values[], eg_piece_values[];
 extern const uint8_t game_phase[];
 extern const int16_t mg_mobility[8][28], eg_mobility[8][28];
-extern uint8_t king_attack[], king_defense[]; //TUNING: this stuff has to be accessible!
+extern uint8_t attack_coef[], attack_weight[]; //TUNING: this stuff has to be accessible!
 extern uint8_t short_castling, long_castling;
 
 void init_eval();

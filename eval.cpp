@@ -214,24 +214,17 @@ const int16_t eg_mobility[8][28] = {
 //0x88 difference King area table (access: (0x77 + King square - piece square) & piece color)
 int8_t king_area[239] = {}; //initalize king area table to all zeroes
 
-//Scores for each square attacked by each piece type
-uint8_t king_attack[] = {0,
-    10, 10, //pawn
-    30, //knight
-    20, //king
-    25, //bishop
-    20, //rook
-    10, //queen
+uint8_t attack_coef[] = {0,
+    0, 0, //pawn (not evaluated)
+    20, //knight
+    0, //king (not evaluated)
+    20, //bishop
+    40, //rook
+    80, //queen
 };
 
-//Scores for each square defended by each piece type
-uint8_t king_defense[] = {0,
-    25, 25, //pawn
-    25, //knight
-    0, //king
-    15, //bishop
-    5, //rook
-    0, //queen
+uint8_t attack_weight[] = {
+    0, 0, 50, 75, 88, 94, 97, 99,
 };
 
 //Scores for castling rights
@@ -274,6 +267,9 @@ int16_t evaluate(uint8_t stm)
     //king squares
     uint8_t enemy_king = plist[16]; //starting with black pieces: white is the enemy
     uint8_t friendly_king = plist[0]; //and black is the friendly king
+
+    uint8_t attacking_pieces_count = 0;
+    uint16_t value_of_attacks = 0;
 
     //evaluation loop
     for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
@@ -332,9 +328,10 @@ int16_t evaluate(uint8_t stm)
 
                 //king safety evaluation: only applied in middlegame
                 if (piece & king_area[0x77 + enemy_king - cur_sq]) //attacking the enemy king
-                    midgame_eval += king_attack[ptype] * cur_persp;
-                if (piece & king_area[0x77 + friendly_king - cur_sq]) //defending the friendly king
-                    midgame_eval += king_defense[ptype] * cur_persp;
+                {
+                    value_of_attacks += attack_coef[ptype];
+                    attacking_pieces_count++;
+                }
                 
                 //Attacking or defending a piece
                 if (board[cur_sq])
@@ -359,6 +356,13 @@ int16_t evaluate(uint8_t stm)
 
         midgame_eval += mg_mobility[ptype][mobility] * cur_persp;
         endgame_eval += eg_mobility[ptype][mobility] * cur_persp;
+
+        //we've reached the end of one color's pieces
+        if (i == 15)
+        {
+            //add king safety values to midgame eval
+            midgame_eval = value_of_attacks * attack_weight[attacking_pieces_count] / 100;
+        }
     }
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
