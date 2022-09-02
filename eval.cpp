@@ -236,7 +236,7 @@ uint8_t long_castling = 20;
 //WARNING: only run this function once, otherwise things can break in the eval!
 void init_eval()
 {
-    mg_king_table[0x74] -= short_castling + long_castling; //King's starting square shall be compensated by castling rights
+    // mg_king_table[0x74] -= short_castling + long_castling; //King's starting square shall be compensated by castling rights
 
     //king's square: check
     king_area[0x77] = WHITE | BLACK;
@@ -339,12 +339,12 @@ int16_t evaluate(uint8_t stm)
                     uint8_t target_piece = board[cur_sq];
 
                     //Castling right evaluation
-                    if ((piece & (MOVED | PTYPE)) == ROOK && (target_piece ^ (piece & ENEMY)) == KING)
-                    {
-                        //A rook that hasn't moved is attacking a king that hasn't moved: castling possible
-                        if (sq & 7) midgame_eval += short_castling * cur_persp; //rook not on A file: it has to be on H file
-                        else midgame_eval += long_castling * cur_persp; //rook on A file
-                    }
+                    // if ((piece & (MOVED | PTYPE)) == ROOK && (target_piece ^ (piece & ENEMY)) == KING)
+                    // {
+                    //     //A rook that hasn't moved is attacking a king that hasn't moved: castling possible
+                    //     if (sq & 7) midgame_eval += short_castling * cur_persp; //rook not on A file: it has to be on H file
+                    //     else midgame_eval += long_castling * cur_persp; //rook on A file
+                    // }
                 }
 
                 if (ptype < 5) break; //leaper
