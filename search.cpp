@@ -360,8 +360,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 #else //king moves in check, very suspicious
 		lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		lmr += !improving; //reduce less for improving
-		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
-		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
+		// lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
+		// lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #endif
 		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
