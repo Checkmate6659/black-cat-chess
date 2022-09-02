@@ -216,12 +216,12 @@ int8_t king_area[239] = {}; //initalize king area table to all zeroes
 
 //Scores for each square attacked by each piece type
 uint8_t king_attack[] = {0,
-    15, 15, //pawn
-    25, //knight
+    10, 10, //pawn
+    30, //knight
     20, //king
     25, //bishop
-    30, //rook
-    40, //queen
+    20, //rook
+    10, //queen
 };
 
 //Scores for each square defended by each piece type
@@ -234,9 +234,17 @@ uint8_t king_defense[] = {0,
     0, //queen
 };
 
+//Scores for castling rights
+//TODO: figure out a way to tune these!
+uint8_t short_castling = 30;
+uint8_t long_castling = 20;
+
 //Initialize evaluation tables
+//WARNING: only run this function once, otherwise things can break in the eval!
 void init_eval()
 {
+    mg_king_table[0x74] -= short_castling + long_castling; //King's starting square shall be compensated by castling rights
+
     //king's square: check
     king_area[0x77] = WHITE | BLACK;
 
@@ -327,6 +335,20 @@ int16_t evaluate(uint8_t stm)
                     midgame_eval += king_attack[ptype] * cur_persp;
                 if (piece & king_area[0x77 + friendly_king - cur_sq]) //defending the friendly king
                     midgame_eval += king_defense[ptype] * cur_persp;
+                
+                //Attacking or defending a piece
+                if (board[cur_sq])
+                {
+                    uint8_t target_piece = board[cur_sq];
+
+                    //Castling right evaluation
+                    if ((piece & (MOVED | PTYPE)) == ROOK && (target_piece ^ (piece & ENEMY)) == KING)
+                    {
+                        //A rook that hasn't moved is attacking a king that hasn't moved: castling possible
+                        if (sq & 7) midgame_eval += short_castling * cur_persp; //rook not on A file: it has to be on H file
+                        else midgame_eval += long_castling * cur_persp; //rook on A file
+                    }
+                }
 
                 if (ptype < 5) break; //leaper
                 if (board[cur_sq]) break; //square occupied: last iteration was attack/defense of a piece
