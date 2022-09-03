@@ -91,8 +91,8 @@ extern float lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_cons
 #define ASPI_CONSTANT 39 //add this to the margin each time we fail
 
 // #define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 75 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 70 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
+#define RFP_MARGIN 100 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 75 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
