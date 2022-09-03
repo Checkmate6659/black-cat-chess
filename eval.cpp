@@ -348,7 +348,7 @@ int16_t evaluate(uint8_t stm)
                     }
                 }
                 
-                midgame_eval += perspective * virtual_mobility_table[virtual_mob] / 4;
+                midgame_eval += perspective * virtual_mobility_table[virtual_mob];
             }
         }
     }
