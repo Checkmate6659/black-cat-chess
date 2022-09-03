@@ -30,8 +30,8 @@ uint8_t see_depth = 9; //SEE pruning in main search max depth
 int16_t see_noisy = 19, see_quiet = 64; //in centipawns; noisy: *depth^2 (quad); quiet: *depth (linear)
 
 //LMP parameters (all x10000)
-float lmp_noimpr_const = 30000, lmp_noimpr_linear = 0, lmp_noimpr_quad = 6666;
-float lmp_impr_const = 55000, lmp_impr_linear = 0, lmp_impr_quad = 15556;
+double lmp_noimpr_const = 30000, lmp_noimpr_linear = 0, lmp_noimpr_quad = 6667;
+double lmp_impr_const = 55000, lmp_impr_linear = 0, lmp_impr_quad = 15556;
 #endif
 
 
@@ -121,8 +121,8 @@ void init_search() //Initialize the late move reduction table
 	for (uint8_t depth = 1; depth < LMP_MAXDEPTH; depth++) //don't need at 0 depth, since it will be unused
 	{
 #ifdef TUNING_MODE
-		lmp_table[depth][0] = std::min((lmp_noimpr_const + lmp_noimpr_linear * depth + lmp_noimpr_quad * depth * depth)/10000., 255.0); //not improving
-		lmp_table[depth][1] = std::min((lmp_impr_const + lmp_impr_linear * depth + lmp_impr_quad * depth * depth)/10000., 255.0); //improving
+		lmp_table[depth][0] = std::min(lmp_noimpr_const/10000. + lmp_noimpr_linear/10000. * depth + lmp_noimpr_quad/10000. * depth * depth, 255.0); //not improving
+		lmp_table[depth][1] = std::min(lmp_impr_const/10000. + lmp_impr_linear/10000. * depth + lmp_impr_quad/10000. * depth * depth, 255.0); //improving
 #else
 		lmp_table[depth][0] = std::min(3.0 + 3 * depth * depth / 4.5, 255.0); //not improving
 		lmp_table[depth][1] = std::min(5.5 + 7 * depth * depth / 4.5, 255.0); //improving
