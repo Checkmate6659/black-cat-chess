@@ -291,7 +291,7 @@ int16_t evaluate(uint8_t stm)
         if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
         {
             //add king safety values to midgame eval
-            midgame_eval += cur_persp * (-tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
+            midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
             cur_persp = 1; //switch to white's perspective
 
@@ -330,7 +330,7 @@ int16_t evaluate(uint8_t stm)
     }
 
     //add king safety values to midgame eval
-    midgame_eval += cur_persp * (-tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
+    midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
     int16_t final_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
