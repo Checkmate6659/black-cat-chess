@@ -250,7 +250,7 @@ void init_eval()
         int8_t vdiff = (diff + 8) >> 4;
 
         int8_t hdiff = idx & 15;
-        if (hdiff & 8) hdiff |= 0xF0;
+        if (hdiff & 8) hdiff = 14 - hdiff;
 
         tropism_n[idx] = 7 + abs(hdiff) - abs(vdiff); //Manhattan dist; hdiff calc is inverted (from 0 to 7)
         tropism_r[idx] = tropism_n[idx] / 2;
@@ -259,6 +259,9 @@ void init_eval()
         //account for relevance of diagonals for bishops
         tropism_b[idx] += bonus_dia_distance[abs((16 + vdiff - hdiff) % 16 - 9)]; //diagonals calculated on the fly
         tropism_b[idx] += bonus_dia_distance[abs((16 + vdiff + hdiff) % 16 - 7)];
+
+        // printf("%3d,", tropism_b[idx]);
+        // if (idx%16==15) printf("\n");
     }
 }
 
