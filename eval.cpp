@@ -280,7 +280,7 @@ int16_t evaluate(uint8_t stm)
     int16_t endgame_eval = 0;
 
     //current piece's perspective
-    int8_t cur_persp = -1; //starting with black pieces
+    int8_t perspective = -1; //starting with black pieces
 
     //king squares
     uint8_t enemy_king = plist[16]; //starting with black pieces: white is the enemy
@@ -298,9 +298,9 @@ int16_t evaluate(uint8_t stm)
         if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
         {
             //add black's king safety values to midgame eval
-            midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
+            // midgame_eval += perspective * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
-            cur_persp = 1; //switch to white's perspective
+            perspective = 1; //switch to white's perspective
 
             uint8_t temp = friendly_king;
             friendly_king = enemy_king;
@@ -319,7 +319,6 @@ int16_t evaluate(uint8_t stm)
         phase += game_phase[ptype]; //add to the game phase
 
         uint8_t psqt_index = sq ^ (piece & 16) * 7;
-        int16_t perspective = (piece & 16) ? -1 : 1;
 
         midgame_eval += perspective * (mg_piece_values[ptype] + mg_psqt[ptype][psqt_index]); //midgame material/PSQT
         endgame_eval += perspective * (eg_piece_values[ptype] + eg_psqt[ptype][psqt_index]); //endgame material/PSQT
@@ -349,13 +348,13 @@ int16_t evaluate(uint8_t stm)
                     }
                 }
 
-                midgame_eval += cur_persp * virtual_mobility_table[virtual_mob];
+                midgame_eval -= perspective * virtual_mobility_table[virtual_mob];
             }
         }
     }
 
     //add white's king safety values to midgame eval
-    midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
+    // midgame_eval += perspective * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
     int16_t final_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
