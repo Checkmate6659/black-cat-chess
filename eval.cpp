@@ -219,6 +219,13 @@ const uint8_t *tropism_tables[] = {
     tropism_q,
 };
 
+//King virtual mobility (available queen moves from king square)
+//Values from Weiss (may need re-tuning)
+const int16_t virtual_mobility_table[28] = {
+    0, 0, 15, 11, -16, -25, -29, -37, -48, -67, -67, -80, -85, -97, -109, -106,
+    -116, -123, -126, -131, -138, -155, -149, -172, -148, -134, -130, -135,
+};
+
 
 //Initialize evaluation tables
 //WARNING: only run this function once, otherwise things can break in the eval!
@@ -290,7 +297,7 @@ int16_t evaluate(uint8_t stm)
     {
         if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
         {
-            //add king safety values to midgame eval
+            //add black's king safety values to midgame eval
             midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
             cur_persp = 1; //switch to white's perspective
@@ -321,15 +328,33 @@ int16_t evaluate(uint8_t stm)
         {
             mg_piece_material += mg_piece_values[ptype];
 
-            if (ptype != KING)
+            if (ptype != KING) //current piece is not pawn, and not king
             {
                 //evaluate king tropism
                 tropism += tropism_tables[ptype][0x77 + sq - enemy_king];
             }
+            else //current piece is king
+            {
+                //evaluate virtual mobility
+                uint8_t virtual_mob = 0;
+                for (int8_t offset : {1, -1, 16, -16, 15, -15, 17, -17})
+                {
+                    //count king's moves as a queen (excluding enemy piece captures)
+                    uint8_t cur_sq = sq + offset;
+
+                    while (!(cur_sq & OFFBOARD) && !board[cur_sq])
+                    {
+                        virtual_mob++;
+                        cur_sq += offset;
+                    }
+                }
+
+                midgame_eval += cur_persp * virtual_mobility_table[virtual_mob];
+            }
         }
     }
 
-    //add king safety values to midgame eval
+    //add white's king safety values to midgame eval
     midgame_eval += cur_persp * (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
