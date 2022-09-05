@@ -124,8 +124,8 @@ void init_search() //Initialize the late move reduction table
 		lmp_table[depth][0] = std::min(lmp_noimpr_const/10000. + lmp_noimpr_linear/10000. * depth + lmp_noimpr_quad/10000. * depth * depth, 255.0); //not improving
 		lmp_table[depth][1] = std::min(lmp_impr_const/10000. + lmp_impr_linear/10000. * depth + lmp_impr_quad/10000. * depth * depth, 255.0); //improving
 #else
-		lmp_table[depth][0] = std::min(3.0 + 3 * depth * depth / 4.5, 255.0); //not improving
-		lmp_table[depth][1] = std::min(5.5 + 7 * depth * depth / 4.5, 255.0); //improving
+		lmp_table[depth][0] = std::min(2.8874 + 0.1763 * depth + 0.8258 * depth * depth, 255.0); //not improving
+		lmp_table[depth][1] = std::min(4.7771 + 1.0328 * depth + 1.4042 * depth * depth, 255.0); //improving
 #endif
 	}
 }

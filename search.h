@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-#define TUNING_MODE
+// #define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -91,8 +91,8 @@ extern double lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_con
 #define ASPI_CONSTANT 39 //add this to the margin each time we fail
 
 // #define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 100 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 75 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
+#define RFP_MARGIN 173 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 73 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
@@ -103,17 +103,17 @@ extern double lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_con
 // #define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
 #define NULL_MOVE_REDUCTION_DIV 509
 
-#define LMR_CONST 0.5512 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 0 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
-#define LMR_SQRT_MUL 0.1262
-#define LMR_DIST_MUL 0.0882
+#define LMR_CONST 0.7098 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0.1389 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_SQRT_MUL 0
+#define LMR_DIST_MUL 0
 #define LMR_DEPTH_MUL 0
 
-#define LMR_HISTORY_THRESHOLD 6434
+#define LMR_HISTORY_THRESHOLD 3958
 
-#define SEE_MAX_DEPTH 9 //TODO: tune!
-#define SEE_NOISY 19 //*depth^2
-#define SEE_QUIET 64 //*depth
+#define SEE_MAX_DEPTH 9 //TODO: tune! (or get rid of entirely)
+#define SEE_NOISY 32 //*depth^2
+#define SEE_QUIET 77 //*depth
 
 #define CHKEXT_MINDEPTH 6
 
