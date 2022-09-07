@@ -192,86 +192,6 @@ const int16_t *eg_psqt[] = {
     eg_queen_table,
 };
 
-//0x88 difference King area table (access: (0x77 + King square - piece square) & piece color)
-int8_t king_area[239] = {}; //initalize king area table to all zeroes
-
-//Scores for castling rights
-//TODO: figure out a way to tune these!
-uint8_t short_castling = 30;
-uint8_t long_castling = 20;
-
-//Tropism values for all pieces
-uint8_t tropism_n[239];
-uint8_t tropism_b[239];
-uint8_t tropism_r[239];
-uint8_t tropism_q[239];
-
-uint8_t bonus_dia_distance[14] = {5, 4, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-
-const uint8_t *tropism_tables[] = {
-    nullptr,
-    nullptr,
-    nullptr,
-    tropism_n,
-    nullptr,
-    tropism_b,
-    tropism_r,
-    tropism_q,
-};
-
-//King virtual mobility (available queen moves from king square)
-//Values from Weiss (may need re-tuning)
-const int16_t virtual_mobility_table[28] = {
-    0, 0, 15, 11, -16, -25, -29, -37, -48, -67, -67, -80, -85, -97, -109, -106,
-    -116, -123, -126, -131, -138, -155, -149, -172, -148, -134, -130, -135,
-};
-
-
-//Initialize evaluation tables
-//WARNING: only run this function once, otherwise things can break in the eval!
-void init_eval()
-{
-    // mg_king_table[0x74] -= short_castling + long_castling; //King's starting square shall be compensated by castling rights
-
-    //king's square: check
-    king_area[0x77] = WHITE | BLACK;
-
-    //king ring
-    for (uint8_t offset : {0x01, -0x01, 0x10, -0x10, -0x11, -0x0F, 0x11, 0x0F})
-        king_area[0x77 + offset] = WHITE | BLACK;
-    
-    //area in front of the kings, for both colors
-    //squares in front of Black king are further down and vice versa
-    for (uint8_t offset : {0x1F, 0x20, 0x21})
-    {
-        king_area[0x77 + offset] = BLACK;
-        king_area[0x77 - offset] = WHITE;
-    }
-
-    //Initialize tropism tables (from CPW evaluation function draft)
-    for (uint8_t idx = 0; idx < 239; idx++)
-    {
-        int8_t diff = idx - 0x77;
-
-        //technically UB, but compilers usually handle it the same way
-        int8_t vdiff = (diff + 8) >> 4;
-
-        int8_t hdiff = idx & 15;
-        if (hdiff & 8) hdiff = 14 - hdiff;
-
-        tropism_n[idx] = 7 + abs(hdiff) - abs(vdiff); //Manhattan dist; hdiff calc is inverted (from 0 to 7)
-        tropism_r[idx] = tropism_n[idx] / 2;
-        tropism_q[idx] = tropism_n[idx] * 5 / 2;
-        tropism_b[idx] = tropism_n[idx] / 2;
-        //account for relevance of diagonals for bishops
-        tropism_b[idx] += bonus_dia_distance[abs((16 + vdiff - hdiff) % 16 - 9)]; //diagonals calculated on the fly
-        tropism_b[idx] += bonus_dia_distance[abs((16 + vdiff + hdiff) % 16 - 7)];
-
-        // printf("%3d,", tropism_b[idx]);
-        // if (idx%16==15) printf("\n");
-    }
-}
-
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
@@ -282,29 +202,12 @@ int16_t evaluate(uint8_t stm)
     //current piece's perspective
     int8_t perspective = -1; //starting with black pieces
 
-    //king squares
-    uint8_t enemy_king = plist[16]; //starting with black pieces: white is the enemy
-    uint8_t friendly_king = plist[0]; //and black is the friendly king
-
-    int16_t mg_piece_material = 0;
-    int16_t tropism = 0;
-
     //evaluation loop
     for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
     {
         if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
         {
-            //add black's king safety values to midgame eval
-            midgame_eval += (-tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
-
             perspective = 1; //switch to white's perspective
-
-            uint8_t temp = friendly_king;
-            friendly_king = enemy_king;
-            enemy_king = temp;
-
-            mg_piece_material = 0;
-            tropism = 0;
         }
 
         uint8_t sq = plist[i];
@@ -319,39 +222,7 @@ int16_t evaluate(uint8_t stm)
 
         midgame_eval += perspective * (mg_piece_values[ptype] + mg_psqt[ptype][psqt_index]); //midgame material/PSQT
         endgame_eval += perspective * (eg_piece_values[ptype] + eg_psqt[ptype][psqt_index]); //endgame material/PSQT
-
-        if (ptype > 2)
-        {
-            mg_piece_material += mg_piece_values[ptype];
-
-            if (ptype != KING) //current piece is not pawn, and not king
-            {
-                //evaluate king tropism
-                tropism += tropism_tables[ptype][0x77 + sq - enemy_king];
-            }
-            else //current piece is king
-            {
-                //evaluate virtual mobility
-                uint8_t virtual_mob = 0;
-                for (int8_t offset : {1, -1, 16, -16, 15, -15, 17, -17})
-                {
-                    //count king's moves as a queen (excluding enemy piece captures)
-                    uint8_t cur_sq = sq + offset;
-
-                    while (!(cur_sq & OFFBOARD) && !board[cur_sq])
-                    {
-                        virtual_mob++;
-                        cur_sq += offset;
-                    }
-                }
-                
-                midgame_eval += perspective * virtual_mobility_table[virtual_mob];
-            }
-        }
     }
-
-    //add white's king safety values to midgame eval
-    midgame_eval += (tropism * mg_piece_material) / INITIAL_MG_PIECE_MATERIAL;
 
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
     int16_t final_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;

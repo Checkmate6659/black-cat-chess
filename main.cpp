@@ -134,7 +134,6 @@ int main(int argc, char** argv)
 {
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_search(); //Fill LMR table
-	init_eval();
 
 	//TEMP: tuning king atk/def arrays
 	/* uint8_t idx = 1;
@@ -365,6 +364,8 @@ int main(int argc, char** argv)
 				}
 				
 				load_fen(fen_string);
+
+				// printf("%d\n", evaluate(board_stm));
 			}
 
 			//Make necessary moves to get to the desired position
