@@ -1,6 +1,5 @@
 #include <iostream>
 #include <sstream>
-#include <string> //temp for array tuning
 #include <time.h>
 
 #include "board.h"
@@ -25,7 +24,7 @@ typedef struct
 
 //UCI options
 //NOTE: this table is going to be modified to store option values (although this is completely unnecessary for now)
-OPTION uci_options[/* 17 */] = { //this number is a temp to tune the atk/def tables in eval
+OPTION uci_options[] = {
 	{"Hash", "spin", 1, 16384, 16, ""}, //Max hash size 16GB (cannot test!); theoretical max with u32 indices and 14B entries would be 28GB
 
 #ifdef TUNING_MODE
@@ -134,14 +133,6 @@ int main(int argc, char** argv)
 {
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_search(); //Fill LMR table
-
-	//TEMP: tuning king atk/def arrays
-	/* uint8_t idx = 1;
-	for (uint8_t i = 0; i < 8; i++)
-	{
-		uci_options[idx++] = {std::to_string(i), "spin", 0, 255, (double)king_attack[i], ""};
-		uci_options[idx++] = {std::to_string(i+10), "spin", 0, 255, (double)king_defense[i], ""};
-	} */
 
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
@@ -285,14 +276,6 @@ int main(int argc, char** argv)
 			//update the option!
 			if (option_name == "Hash") reallocate_tt((TT_INDEX)uci_options[option_index].val_float); //reallocate TT
 
-
-			/* //TEMP TO TUNE ATK/DEF ARRAYS!
-			uint8_t tmp_idx=1;
-			for (uint8_t i=0; i<8; i++)
-			{
-				king_attack[i] = uci_options[tmp_idx++].val_float;
-				king_defense[i] = uci_options[tmp_idx++].val_float;
-			} */
 
 #ifdef TUNING_MODE
 			aspi_margin = uci_options[1].val_float;
