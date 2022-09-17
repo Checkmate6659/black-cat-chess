@@ -2,6 +2,7 @@
 #define __EVAL_H__
 
 #include "board.h"
+#include "nnue.h"
 
 #define MATE_SCORE -30000 //Score of a checkmate (loss); not -32398, since that could result in overflows
 #define IS_MATE(score) (-MATE_SCORE - std::abs(score) < 256) //is the score a mate score?

@@ -195,7 +195,7 @@ const int16_t *eg_psqt[] = {
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
-    uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
+/*     uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
     int16_t midgame_eval = 0;
     int16_t endgame_eval = 0;
 
@@ -227,5 +227,9 @@ int16_t evaluate(uint8_t stm)
     phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
     int16_t final_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
 
-    return final_eval * ((stm & BLACK) ? -1 : 1);
+    return final_eval * ((stm & BLACK) ? -1 : 1); */
+
+
+    int nnue_result = eval_nnue(stm); //"lazy" nnue (TODO: incremental update)
+    return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the nnue result
 }
