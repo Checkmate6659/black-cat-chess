@@ -195,44 +195,6 @@ const int16_t *eg_psqt[] = {
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
-    if(sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) == 0xFF) //nnue bad at evaluating checks (TODO: avoid with qsearch improvement etc)
-    {
-        int nnue_result = eval_nnue(stm); //"lazy" nnue (TODO: incremental update)
-        return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the nnue result
-    }
-
-
-    uint8_t phase = 0; //Game phase: lower means closer to the endgame (less pieces on board)
-    int16_t midgame_eval = 0;
-    int16_t endgame_eval = 0;
-
-    //current piece's perspective
-    int8_t perspective = -1; //starting with black pieces
-
-    //evaluation loop
-    for (uint8_t i = 0; i < 32; i++) //calculate the phase of the game and material/PSQT for mg/eg
-    {
-        if (i == 16) //we got to the white king: cur_persp and friendly and enemy kings are switched (compiler optimize this pls)
-        {
-            perspective = 1; //switch to white's perspective
-        }
-
-        uint8_t sq = plist[i];
-        if (sq == 0xFF) continue;
-        
-        uint8_t piece = board[sq];
-        uint8_t ptype = piece & PTYPE;
-
-        phase += game_phase[ptype]; //add to the game phase
-
-        uint8_t psqt_index = sq ^ (piece & 16) * 7;
-
-        midgame_eval += perspective * (mg_piece_values[ptype] + mg_psqt[ptype][psqt_index]); //midgame material/PSQT
-        endgame_eval += perspective * (eg_piece_values[ptype] + eg_psqt[ptype][psqt_index]); //endgame material/PSQT
-    }
-
-    phase = std::min(phase, (uint8_t)TOTAL_PHASE); //by promoting pawns to queens, the game phase could be higher than the total phase
-    int16_t final_eval = (midgame_eval * phase + endgame_eval * (TOTAL_PHASE - phase)) / TOTAL_PHASE;
-
-    return final_eval * ((stm & BLACK) ? -1 : 1);
+    int nnue_result = eval_nnue(stm); //"lazy" nnue (TODO: incremental update)
+    return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the nnue result
 }

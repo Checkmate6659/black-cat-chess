@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-// #define TUNING_MODE
+#define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -85,37 +85,37 @@ extern double lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_con
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-#define ASPI_MARGIN 22 //Starting aspiration window margin
+#define ASPI_MARGIN 34 //Starting aspiration window margin
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 1.68 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
-#define ASPI_CONSTANT 39 //add this to the margin each time we fail
+#define ASPI_MULTIPLIER 1.61 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
+#define ASPI_CONSTANT 42 //add this to the margin each time we fail
 
 // #define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 173 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 73 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
+#define RFP_MARGIN 177 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 81 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
 
 // #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 
-#define NULL_MOVE_REDUCTION_CONST 3
-#define NULL_MOVE_REDUCTION_DEPTH 16
+#define NULL_MOVE_REDUCTION_CONST 4
+#define NULL_MOVE_REDUCTION_DEPTH 17
 // #define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
-#define NULL_MOVE_REDUCTION_DIV 509
+#define NULL_MOVE_REDUCTION_DIV 778
 
-#define LMR_CONST 0.7098 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 0.1389 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
-#define LMR_SQRT_MUL 0
-#define LMR_DIST_MUL 0
-#define LMR_DEPTH_MUL 0
+#define LMR_CONST 0.7809 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0.1256 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_SQRT_MUL 0.0189
+#define LMR_DIST_MUL 0.0184
+#define LMR_DEPTH_MUL 0.0091
 
-#define LMR_HISTORY_THRESHOLD 3958
+#define LMR_HISTORY_THRESHOLD 4154
 
 #define SEE_MAX_DEPTH 9 //TODO: tune! (or get rid of entirely)
-#define SEE_NOISY 32 //*depth^2
-#define SEE_QUIET 77 //*depth
+#define SEE_NOISY 33 //*depth^2
+#define SEE_QUIET 83 //*depth
 
-#define CHKEXT_MINDEPTH 6
+#define CHKEXT_MINDEPTH 7
 
 //TODO: tune LMP!
 #define LMP_MAXDEPTH 9 //cannot be tuned easily
