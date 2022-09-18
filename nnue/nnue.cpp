@@ -1215,7 +1215,11 @@ static bool verify_net(const void *evalData, size_t size)
 
 static void init_weights(const void *evalData)
 {
-  const char *d = (const char *)evalData + TransformerStart + 4;
+  const char *d = (const char *)evalData + TransformerStart + 4; //after this the length of the thing is 21022504 bytes
+
+// printf("#include \"eval_data.h\"\nconst char DEFAULT_EVAL_DATA[] = {");
+// for (int i = 0; i < 21022504; i++) printf("%d,", d[i]); //add 32 extra bytes
+// printf("};");
 
   // Read transformer
   for (unsigned i = 0; i < kHalfDimensions; i++, d += 2)
@@ -1228,9 +1232,41 @@ static void init_weights(const void *evalData)
   for (unsigned i = 0; i < 32; i++, d += 4)
     hidden1_biases[i] = readu_le_u32(d);
   d = read_hidden_weights(hidden1_weights, 512, d);
+
   for (unsigned i = 0; i < 32; i++, d += 4)
     hidden2_biases[i] = readu_le_u32(d);
   d = read_hidden_weights(hidden2_weights, 32, d);
+
+  for (unsigned i = 0; i < 1; i++, d += 4)
+    output_biases[i] = readu_le_u32(d);
+  read_output_weights(output_weights, d);
+
+#ifdef USE_AVX2
+  permute_biases(hidden1_biases);
+  permute_biases(hidden2_biases);
+#endif
+}
+
+void default_weights()
+{
+  const char *d = DEFAULT_EVAL_DATA; //the length of the thing is 21022504 bytes
+
+  // Read transformer
+  for (unsigned i = 0; i < kHalfDimensions; i++, d += 2)
+    ft_biases[i] = readu_le_u16(d);
+  for (unsigned i = 0; i < kHalfDimensions * FtInDims; i++, d += 2)
+    ft_weights[i] = readu_le_u16(d);
+
+  // Read network
+  d += 4;
+  for (unsigned i = 0; i < 32; i++, d += 4)
+    hidden1_biases[i] = readu_le_u32(d);
+  d = read_hidden_weights(hidden1_weights, 512, d);
+
+  for (unsigned i = 0; i < 32; i++, d += 4)
+    hidden2_biases[i] = readu_le_u32(d);
+  d = read_hidden_weights(hidden2_weights, 32, d);
+
   for (unsigned i = 0; i < 1; i++, d += 4)
     output_biases[i] = readu_le_u32(d);
   read_output_weights(output_weights, d);

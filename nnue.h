@@ -5,6 +5,7 @@
 #include <inttypes.h>
 
 
+void init_nnue();
 void init_nnue (char *fname);
 int eval_nnue (uint8_t stm);
 

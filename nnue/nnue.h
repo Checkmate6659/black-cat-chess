@@ -9,6 +9,8 @@
 #endif
 #endif
 
+#include "eval_data.h"
+
 /**
 * Calling convention
 */
@@ -140,7 +142,7 @@ DLLExport int _CDECL nnue_evaluate(
 /**
 * Incremental NNUE evaluation function.
 * -------------------------------------------------
-* First three parameters and return type are as in @nnue_evaluate
+* First three parameters and return type are as in nnue_evaluate
 *
 * nnue_data
 *    nnue_data[0] is pointer to NNUEdata for ply i.e. current position
@@ -153,5 +155,8 @@ DLLExport int _CDECL nnue_evaluate_incremental(
   int* squares,                     /** Corresponding array of squares each piece stands on */
   NNUEdata** nnue_data              /** Pointer to NNUEdata* for current and previous plies */
 );
+
+
+void default_weights();
 
 #endif

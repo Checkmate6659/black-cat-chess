@@ -23,6 +23,11 @@ const uint8_t NNUE_PIECE_INDEX[16] = { //NNUE pieces
     wqueen,
 };
 
+void init_nnue()
+{
+    default_weights();
+}
+
 void init_nnue (char *fname)
 {
     nnue_init(fname);

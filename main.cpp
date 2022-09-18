@@ -133,9 +133,9 @@ int main(int argc, char** argv)
 {
 	init_tt(); //Initialize zobrist keys and allocate/clear transposition table
 	init_search(); //Fill LMR table
-	
+
+	init_nnue();
 	// init_nnue((char*)"./evalfile.nnue");
-	init_nnue((char*)"/home/enigma/evalfile.nnue"); //TEMP
 
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
