@@ -7,6 +7,7 @@
 #include <cassert> //DEBUGGING ONLY!
 
 #include "attacks.h"
+#include "nnue.h"
 
 
 #define OFFBOARD 0x88
