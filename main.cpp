@@ -136,7 +136,7 @@ int main(int argc, char** argv)
 
 	init_nnue();
 	// init_nnue((char*)"./evalfile.nnue");
-
+	
 	if (argc == 2) //benchmarking mode: sending bench as command line arg
 	{
 		node_count = 0;
@@ -150,6 +150,12 @@ int main(int argc, char** argv)
 			// clear_tt(); //clear the transposition table
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100;
+
+			stack.ply = 2;
+			stack.nnue_data[0].accumulator.computedAccumulation = 0;
+			stack.nnue_data[1].accumulator.computedAccumulation = 0;
+			stack.nnue_data[2].accumulator.computedAccumulation = 0;
+			evaluate(board_stm);
 
 			// search(board_stm, i < 5 ? 12 : 7, board_last_target, MATE_SCORE, -MATE_SCORE, //do higher depth search on first few fens, to account for potential high-depth search techniques
 			// 	board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
@@ -425,6 +431,12 @@ int main(int argc, char** argv)
 				RPT_INDEX rpt_index = board_hash(board_stm, board_last_target) & RPT_MASK;
 				repetition_table[rpt_index] = -100;
 			}
+
+			stack.ply = 2;
+			stack.nnue_data[0].accumulator.computedAccumulation = 0;
+			stack.nnue_data[1].accumulator.computedAccumulation = 0;
+			stack.nnue_data[2].accumulator.computedAccumulation = 0;
+			evaluate(board_stm);
 		}
 		else if (command == "go")
 		{

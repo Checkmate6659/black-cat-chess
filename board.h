@@ -1,3 +1,6 @@
+//TODO: speed up if statements with __builtin_expect
+//or __glibc_likely and __glibc_unlikely
+
 #ifndef __BOARD_H__
 #define __BOARD_H__
 
@@ -95,6 +98,8 @@ extern uint8_t plist[32];
 extern uint8_t board_stm;
 extern uint8_t board_last_target;
 extern int8_t half_move_clock;
+
+extern NNUEstack stack;
 
 const uint8_t PIECE_PROMO[] = {QUEEN, ROOK, BISHOP, KNIGHT};
 const uint32_t SCORE_PROMO[] = {SCORE_PROMO_Q, SCORE_PROMO_R, SCORE_PROMO_B, SCORE_PROMO_N};

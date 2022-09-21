@@ -195,6 +195,6 @@ const int16_t *eg_psqt[] = {
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
-    int nnue_result = eval_nnue(stm); //"lazy" nnue (TODO: incremental update)
+    int nnue_result = eval_nnue_inc(stm, &stack);
     return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the nnue result
 }

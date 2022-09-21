@@ -13,5 +13,5 @@ all:
 	# $(WCC) -o $(WEXE) *.cpp ./nnue/misc.cpp ./nnue/nnue.cpp ./nnue/eval_data.o -Wall -Wextra -O3 -Ofast -flto -march=native -s -DNDEBUG -fno-signed-zeros -funroll-loops -fomit-frame-pointer -fno-stack-protector -fgcse-sm -fgcse-las -faggressive-loop-optimizations
 
 	#DEBUG (G++)
-	# $(CC) -o $(EXE) *.cpp ./nnue/*.cpp -Wall -Wextra -g3 -fsanitize=address #-ggdb3 -pg
+	# $(CC) -o $(EXE) *.cpp ./nnue/misc.cpp ./nnue/nnue.cpp ./nnue/eval_data.o -Wall -Wextra -g3 -fsanitize=address #-ggdb3 -pg
 

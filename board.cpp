@@ -47,6 +47,7 @@ uint8_t board_stm = WHITE;
 uint8_t board_last_target = -2;
 int8_t half_move_clock = 0;
 
+NNUEstack stack = { {}, 2 }; //NNUE stack; has to be defined here to get access to it in make_move and unmake_move
 
 //and here comes 41 bytes (could be way less) of some crazy compression & branchless-ification (could be useful for some kind of variant program as well)
 //number of offsets for each piece
@@ -551,6 +552,15 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 	//Contains the piece type, and then its index in the big piece list
 	MOVE_RESULT result = MOVE_RESULT{ board[move.tgt], board[move.tgt | 8], board[move.src] };
 
+	stack.ply++; //go to next ply
+	stack.nnue_data[stack.ply].accumulator.computedAccumulation = 0; //accumulation not yet computed
+	DirtyPiece *dp = &(stack.nnue_data[stack.ply].dirtyPiece); //get dirty piece reference
+	dp->dirtyNum = 1; //initialize dp
+
+	dp->pc[0] = NNUE_PIECE_INDEX[board[move.src] & 15];
+	dp->from[0] = NNUE_SQ(move.src);
+	dp->to[0] = NNUE_SQ(move.tgt);
+
 	// result.prev_state = board[move.src]; //store old piece type (for promotions and recovery of castling rights)
 
 	//move the piece
@@ -568,20 +578,39 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 	{
 		//calculating the new target
 		//maybe we could do this more efficiently?
-		move.tgt -= (stm - 12) << 2;
+		move.tgt ^= 16;
+		// move.tgt -= (stm - 12) << 2; //old calculation
 
 		//recalculate the result
 		result = MOVE_RESULT{ board[move.tgt], board[move.tgt | 8], result.prev_state };
 
 		board[move.tgt] = 0; //we just take it!
 		plist[result.plist_idx] = -1; //update piece list
+
+		//update dirty piece
+		dp->dirtyNum = 2; // captured piece goes off the board
+		dp->pc[1] = NNUE_PIECE_INDEX[result.piece & 15];
+		dp->from[1] = NNUE_SQ(move.tgt); //EP square (square of captured pawn)
+		dp->to[1] = 64;
 	}
 	else
 	{
-		if (result.piece) plist[result.plist_idx] = -1; //Signal captured piece by off-the-board coordinate in piece list
-
-		if (move.flags & F_CASTLE)
+		if (result.piece) //capturing (not ep)
 		{
+			plist[result.plist_idx] = -1; //Signal captured piece by off-the-board coordinate in piece list
+
+			//update dirty piece
+			dp->dirtyNum = 2; // captured piece goes off the board
+			dp->pc[1] = NNUE_PIECE_INDEX[result.piece & 15];
+			dp->from[1] = NNUE_SQ(move.tgt);
+			dp->to[1] = 64;
+		}
+
+		if (move.flags & F_CASTLE) //castling
+		{
+	 		dp->dirtyNum = 2; //update dirty number
+			dp->pc[1] = NNUE_PIECE_INDEX[(stm & WHITE) | ROOK]; //friendly rook is moving
+
 			if (move.flags & F_KCASTLE) //WARNING: only implemented for white so far!
 			{
 				board[move.src + 1] = board[move.tgt] | ROOK; //compiler will optimize that together, don't worry; we use that king | rook = rook
@@ -589,6 +618,10 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 
 				board[move.src + 9] = board[move.src + 11]; //we know the rook hasn't moved, so it's constant = optim?
 				plist[board[move.src + 9]] = move.src + 1; //same goes here (don't have to unset that, and using index 0x7F OR 0x7D is the same)
+
+				//mark rook in dirty piece
+				dp->from[1] = NNUE_SQ(move.src + 3);
+				dp->to[1] = NNUE_SQ(move.src + 1);
 			}
 			else
 			{
@@ -597,12 +630,23 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 
 				board[move.src + 7] = board[move.src + 4]; //we know the rook hasn't moved, so it's constant = optim?
 				plist[board[move.src + 7]] = move.src - 1; //same goes here (don't have to unset that, and using index 0x78 OR 0x7B is the same)
+
+				//mark rook in dirty piece
+				dp->from[1] = NNUE_SQ(move.src - 4);
+				dp->to[1] = NNUE_SQ(move.src - 1);
 			}
 		}
 		else if (move.flags & F_PROMO)
 		{
 			board[move.tgt] &= 0b111000; //keep the color bits, but clear the piece bits
 			board[move.tgt] |= move.promo; //change the piece!
+
+			//update dirty piece
+			dp->to[0] = 64; //promoting pawn disappears
+			dp->pc[dp->dirtyNum] = NNUE_PIECE_INDEX[board[move.tgt] & 15]; //promoting piece
+			dp->from[dp->dirtyNum] = 64; //resulting piece appears out of nowhere
+			dp->to[dp->dirtyNum] = NNUE_SQ(move.tgt);
+			dp->dirtyNum++;
 		}
 	}
 
@@ -614,6 +658,8 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 	//Information to use:
 	//MOVE = {source, target, flags, promo, score}
 	//MOVE_RESULT = {piece type, plist index, prev_state}
+
+	stack.ply--; //Go back to the previous ply of the stack
 
 	//1st half
 	board[move.tgt] = move_result.prev_state; //restore the piece type (test)

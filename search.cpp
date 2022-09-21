@@ -86,6 +86,8 @@ inline bool check_time() //Returns true if there is no time left or if a keystro
 //http://www.talkchess.com/forum3/viewtopic.php?t=65273
 void init_search() //Initialize the late move reduction table
 {
+	for (uint8_t depth = 0; depth < MAX_DEPTH; depth++) stack.nnue_data->accumulator.computedAccumulation = 0;
+
 	for (uint8_t depth = 0; depth < MAX_DEPTH; depth++) //prev ply
 		for (uint8_t move = 0; move < MAX_MOVE; move++)
 		{
@@ -528,6 +530,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 void search_root(uint32_t time_ms, uint8_t fixed_depth)
 {
 	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
+	stack.ply = 0;
 
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
