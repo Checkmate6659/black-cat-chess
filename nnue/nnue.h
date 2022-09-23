@@ -32,6 +32,17 @@
 #   define DLLExport EXTERNC
 #endif
 
+//Intrinsic stuff
+#include <x86intrin.h>
+
+//Comment or uncomment lines HERE:
+#define USE_AVX2   1
+#define USE_SSE41  1
+#define USE_SSE3   1
+#define USE_SSE2   1
+#define USE_SSE    1
+#define IS_64BIT   1
+
 /**
 * Internal piece representation
 *     wking=1, wqueen=2, wrook=3, wbishop= 4, wknight= 5, wpawn= 6,
