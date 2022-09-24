@@ -35,13 +35,20 @@
 //Intrinsic stuff
 #include <x86intrin.h>
 
-//Comment or uncomment lines HERE:
+//Comment or uncomment lines HERE if intrinsic-related build errors
+#if defined(__AVX2__)
 #define USE_AVX2   1
+#elif defined(__SSE41__)
 #define USE_SSE41  1
+#elif defined(__SSE3__)
 #define USE_SSE3   1
+#elif defined(__SSE2__)
 #define USE_SSE2   1
+#elif defined(__SSE__)
 #define USE_SSE    1
+#else
 #define IS_64BIT   1
+#endif
 
 /**
 * Internal piece representation
