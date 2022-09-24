@@ -237,7 +237,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (!depth || ply == MAX_DEPTH)
 	{
 		qcall_count++;
-		return qsearch(stm, alpha, beta);
+		return qsearch(stm, alpha, beta, QS_CHK);
 	}
 
 	//Internal Iterative Reduction
@@ -475,7 +475,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	return best_score; //FAIL SOFT
 }
 
-int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
+int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply)
 {
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 
@@ -500,7 +500,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 	}
 	else
 	{
-		generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
+		generate_loud_moves(&mlist, stm, check_ply); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
 		if (mlist.count == 0) return alpha; //No captures available: return alpha
 	}
 	
@@ -529,7 +529,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		no_legal_move = false;
 
-		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
+		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha, check_ply - !(curmove.flags & F_CAPT));
 
 		unmake_move(stm, curmove, res);
 
@@ -555,7 +555,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
-	int16_t eval = qsearch(board_stm, alpha, beta); //first guess at the score is just qsearch = depth 0
+	int16_t eval = qsearch(board_stm, alpha, beta, QS_CHK); //first guess at the score is just qsearch = depth 0
 
 	MOVE best_move;
 

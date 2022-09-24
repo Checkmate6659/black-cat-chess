@@ -472,7 +472,7 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 	}
 }
 
-void generate_loud_moves(MLIST *mlist, uint8_t stm)
+void generate_loud_moves(MLIST *mlist, uint8_t stm, int8_t check_ply)
 {
 	mlist->count = 0; //just being extra-safe here, and diminishing code size
 	
@@ -480,6 +480,8 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm)
 	// uint8_t checking_piece = sq_attacked(king_sq, stm ^ ENEMY); //first piece to attack the king (in case of double check its just the first one)
 	// bool in_check = checking_piece != 0xFF; //are we in check?
 	// // printf("CHECK %x %x\n", in_check, stm);
+
+	uint8_t enemy_king_sq = plist[stm & 16]; //Square of the enemy king (for checks)
 
 	//quite a lot of extra instructions for doing black first white second in the piece lists
 	uint8_t end_value = (stm ^ ENEMY) << 1; //start value + 16 pieces
@@ -497,6 +499,7 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm)
 		for (uint8_t i = noffsets[ptype]; i;)
 		{
 			i--; //do it HERE! not at the top! otherwise it's always off by 1!
+			if (!i && ptype < 3) break;
 
 			int8_t offset = offsets[i + offset_idx[ptype]]; //current offset to TEST
 			uint8_t current_target = sq + offset;
@@ -506,6 +509,39 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm)
 			//iterate through ray
 			while (!((current_target & OFFBOARD) || board[current_target])) //go till we hit something
 			{
+				//Detect and add direct checks
+			    uint8_t diff = 0x77 + enemy_king_sq - current_target;
+				uint8_t ray = RAYS[diff] & RAYMSK[ptype]; //ray from current target to enemy king (for checks)
+
+				if (check_ply > 0 && ray) //checks are available, and a direct check is possible, correct relation
+				{
+					if (ptype < 5)
+					{
+						//leaper attack: no blocking
+						mlist->moves[mlist->count] = MOVE{ sq, current_target, 0, 0, SCORE_CHECK }; //check
+						mlist->count++;
+					}
+					else //slider
+					{
+						//ray stuff
+						int8_t chk_offset = RAY_OFFSETS[diff];
+						uint8_t chk_tgt = enemy_king_sq + chk_offset; //yeah for some reason it's backwards
+
+						//iterate through this ray as well
+						while (chk_tgt != current_target)
+						{
+							if ((chk_tgt & OFFBOARD) || board[chk_tgt]) break; //A piece is blocking the ray
+
+							chk_tgt += chk_offset;
+						}
+						if (chk_tgt == current_target) //Target acquired
+						{
+							mlist->moves[mlist->count] = MOVE{ sq, current_target, 0, 0, SCORE_CHECK }; //check
+							mlist->count++;
+						}
+					}
+				}
+
 				if (ptype < 5) //if it's a leaper, abort after 1 iteration (or 2 for pawns, as written above), without erasing target info
 				{
 					break; //break the loop
@@ -515,7 +551,7 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm)
 			}
 
 			//generate capture
-			if (!(current_target & OFFBOARD) && ((board[current_target] ^ ENEMY) & ENEMY) == stm && (i || ptype > 2)) //ENEMY NEUTRALIZED (exception for pawns moving forward)
+			if (!(current_target & OFFBOARD) && ((board[current_target] ^ ENEMY) & ENEMY) == stm) //ENEMY NEUTRALIZED (exception for pawns moving forward)
 			{
 				mlist->moves[mlist->count] = MOVE{ sq, current_target, F_CAPT, 0, SCORE_CAPT }; //thanks for the free stuff bro
 				mlist->count++;

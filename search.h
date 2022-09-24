@@ -8,7 +8,7 @@
 #include "order.h"
 #include "posix.h"
 
-#define TUNING_MODE
+// #define TUNING_MODE
 
 
 #define RPT_BITCNT 18 //Repetition hash's size (default is 16-bit indices: lower 16 bits of Zobrist key)
@@ -85,6 +85,8 @@ extern double lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_con
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
+#define QS_CHK 3 //look at 3 checks max in qsearch
+
 #define ASPI_MARGIN 34 //Starting aspiration window margin
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
 #define ASPI_MULTIPLIER 1.61 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
@@ -140,7 +142,7 @@ uint64_t perft(uint8_t stm, uint8_t last_target, uint8_t depth);
 
 bool nullmove_safe(uint8_t stm);
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply);
-int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta);
+int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply);
 void search_root(uint32_t time_ms, uint8_t fixed_depth);
 
 #endif

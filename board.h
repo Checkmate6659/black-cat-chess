@@ -113,7 +113,7 @@ extern int16_t SEE_VALUES[];
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
 
 void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target); //Generating all moves
-void generate_loud_moves(MLIST *mlist, uint8_t stm); //Generating "loud" moves only (just captures for now)
+void generate_loud_moves(MLIST *mlist, uint8_t stm, int8_t check_ply); //Generating "loud" moves only (just captures for now)
 
 MOVE_RESULT make_move(uint8_t stm, MOVE move); //Make a move, and give a MOVE_RESULT struct with the takeback info
 void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result); //Use the MOVE_RESULT given out by a make_move function to unmake that move
