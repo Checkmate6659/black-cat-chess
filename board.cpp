@@ -326,6 +326,8 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 	bool in_check = checking_piece != 0xFF; //are we in check?
 	// printf("CHECK %x %x\n", in_check, stm);
 
+	uint8_t enemy_king_sq = plist[stm & 16]; //Square of the enemy king (for checks)
+
 	//quite a lot of extra instructions for doing black first white second in the piece lists
 	uint8_t end_value = (stm ^ ENEMY) << 1; //start value + 16 pieces
 
@@ -384,6 +386,40 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 				}
 
 				current_target += offset;
+
+				//Detect direct checks
+			    uint8_t diff = 0x77 + enemy_king_sq - current_target;
+				uint8_t ray = RAYS[diff] & RAYMSK[ptype]; //ray from current target to enemy king (for checks)
+				bool is_check = false;
+
+				if (ray) //a direct check is possible, correct relation
+				{
+					if (ptype < 5)
+					{
+						//leaper attack: no blocking
+						is_check = true;
+					}
+					else //slider
+					{
+						//ray stuff
+						int8_t chk_offset = RAY_OFFSETS[diff];
+						uint8_t chk_tgt = enemy_king_sq + chk_offset; //yeah for some reason it's backwards
+
+						//iterate through this ray as well
+						while (chk_tgt != current_target)
+						{
+							if (board[chk_tgt]) break; //A piece is blocking the ray
+
+							chk_tgt += chk_offset;
+						}
+						is_check = chk_tgt == current_target; //slider check if we made ends meet, literally
+					}
+
+					if (is_check && mlist->moves[mlist->count - 1].flags < F_CAPT)
+					{
+						mlist->moves[mlist->count - 1].score = SCORE_CHECK;
+					}
+				}
 
 				//THE NEXT LINE COULD BE IMPROVED!
 				//don't bother about pawns that just moved FORWARD 1 square (they can move up to 2 squares!)
@@ -530,7 +566,7 @@ void generate_loud_moves(MLIST *mlist, uint8_t stm, int8_t check_ply)
 						//iterate through this ray as well
 						while (chk_tgt != current_target)
 						{
-							if ((chk_tgt & OFFBOARD) || board[chk_tgt]) break; //A piece is blocking the ray
+							if (board[chk_tgt]) break; //A piece is blocking the ray
 
 							chk_tgt += chk_offset;
 						}

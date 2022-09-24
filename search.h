@@ -85,7 +85,7 @@ extern double lmp_noimpr_const, lmp_noimpr_linear, lmp_noimpr_quad, lmp_impr_con
 #define REPETITION 0 //Draw score when we repeated moves (twofold)
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
-#define QS_CHK 1 //look at 1 check max in qsearch (at 0 its disabling checks)
+#define QS_CHK 0 //look at QS_CHK check max in qsearch (disabled for now)
 
 #define ASPI_MARGIN 34 //Starting aspiration window margin
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
