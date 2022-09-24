@@ -491,7 +491,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 		// 	return alpha;
 	}
 
-	bool no_see_prune = incheck;
+	bool no_legal_move = incheck;
 
 	MLIST mlist;
 	if (incheck)
@@ -521,13 +521,13 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 		node_count++;
 
 		//SEE pruning in qsearch (do not prune first move if in check)
-		if (!no_see_prune && SEE_VALUES[res.piece & PTYPE] < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
+		if (!no_legal_move && SEE_VALUES[res.piece & PTYPE] < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
 		{
 			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
 			continue;
 		}
 
-		no_see_prune = false;
+		no_legal_move = false;
 
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 
@@ -538,6 +538,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 			return beta;
 	}
 
+	if (no_legal_move) return MATE_SCORE + MAX_DEPTH; //checkmate: in check and no legal move
 	return alpha;
 }
 
@@ -555,7 +556,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
 	int16_t eval = qsearch(board_stm, alpha, beta); //first guess at the score is just qsearch = depth 0
-	
+
 	MOVE best_move;
 
 	//iterative deepening loop
