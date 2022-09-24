@@ -477,26 +477,39 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 {
-	//if stand pat causes a beta cutoff, return before generating moves
-	int16_t stand_pat = evaluate(stm); //stand pat score
-	if (stand_pat >= beta)
-		return beta;
-	else alpha = std::max(alpha, stand_pat);
-	//tuning revealed delta pruning probably BAD!
-	// if (stand_pat <= alpha - DELTA) //delta pruning
-	// 	return alpha;
+	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 
+	//if stand pat causes a beta cutoff, return before generating moves (only when NOT in check!)
+	if (!incheck)
+	{
+		int16_t stand_pat = evaluate(stm); //stand pat score
+		if (stand_pat >= beta)
+			return beta;
+		else alpha = std::max(alpha, stand_pat);
+		//tuning revealed delta pruning probably BAD!
+		// if (stand_pat <= alpha - DELTA) //delta pruning
+		// 	return alpha;
+	}
+
+	bool no_see_prune = incheck;
 
 	MLIST mlist;
-	generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
-	if (mlist.count == 0) return alpha; //No captures available: return alpha
-
+	if (incheck)
+	{
+		generate_moves(&mlist, stm, -2); //Generate all pseudo-legal moves
+	}
+	else
+	{
+		generate_loud_moves(&mlist, stm); //Generate all the "loud" moves! (pseudo-legal, still need to check for legality)
+		if (mlist.count == 0) return alpha; //No captures available: return alpha
+	}
+	
 	score_moves(&mlist, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
 	while (mlist.count) //iterate through the move list backwards
 	{
 		// MOVE curmove = mlist.moves[mlist.count];
-		MOVE curmove =  pick_move(&mlist);
+		MOVE curmove = pick_move(&mlist);
 		MOVE_RESULT res = make_move(stm, curmove);
 
 		if (sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF) //oh no... this move is illegal!
@@ -507,12 +520,14 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta)
 
 		node_count++;
 
-		//SEE pruning in qsearch
-		if (SEE_VALUES[res.piece & PTYPE] < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
+		//SEE pruning in qsearch (do not prune first move if in check)
+		if (!no_see_prune && SEE_VALUES[res.piece & PTYPE] < see(stm ^ ENEMY, curmove.tgt)) //Lost material exceeds captured material (trades are not included)
 		{
 			unmake_move(stm, curmove, res); //skip move: loses material in static exchange
 			continue;
 		}
+
+		no_see_prune = false;
 
 		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha);
 
