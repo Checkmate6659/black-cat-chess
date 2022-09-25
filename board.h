@@ -17,6 +17,8 @@
 #define MAX_MOVE 218 //maximum pseudolegal number of moves in a legal chess position
 #define MAX_DEPTH 127 //maximum depth: DO NOT SET ABOVE 127! Setting it above 127 will break repetition/50-move rule; setting it above 256 will overflow and break stuff
 
+// #define DO_DIRECT_CHECKS //direct checks are loud/noisy moves
+
 #define PTYPE 0b000111
 #define WHITE 0b001000
 #define BLACK 0b010000

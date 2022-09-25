@@ -387,6 +387,8 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 
 				current_target += offset;
 
+#ifdef DO_DIRECT_CHECKS
+
 				//Detect direct checks
 			    uint8_t diff = 0x77 + enemy_king_sq - current_target;
 				uint8_t ray = RAYS[diff] & RAYMSK[ptype]; //ray from current target to enemy king (for checks)
@@ -420,6 +422,7 @@ void generate_moves(MLIST *mlist, uint8_t stm, uint8_t last_target)
 						mlist->moves[mlist->count - 1].score = SCORE_CHECK;
 					}
 				}
+#endif
 
 				//THE NEXT LINE COULD BE IMPROVED!
 				//don't bother about pawns that just moved FORWARD 1 square (they can move up to 2 squares!)

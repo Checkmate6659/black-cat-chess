@@ -69,6 +69,9 @@ OPTION uci_options[] = {
 	{"LMPImprConst", "spin", 0, 100000, (double)lmp_impr_const, ""},
 	{"LMPImprLinear", "spin", 0, 100000, (double)lmp_impr_linear, ""},
 	{"LMPImprQuad", "spin", 0, 100000, (double)lmp_impr_quad, ""},
+	{"QSChkPly", "spin", 0, 10, (double)qs_chk, ""},
+	{"QSSEENoChk", "spin", -500, 500, (double)qs_see_nochk, ""},
+	{"QSSEEChk", "spin", -500, 500, (double)qs_see_chk, ""},
 #endif
 };
 
@@ -328,6 +331,9 @@ int main(int argc, char** argv)
 			lmp_impr_const = uci_options[39].val_float;
 			lmp_impr_linear = uci_options[40].val_float;
 			lmp_impr_quad = uci_options[41].val_float;
+			qs_chk = uci_options[42].val_float;
+			qs_see_nochk = uci_options[43].val_float;
+			qs_see_chk = uci_options[44].val_float;
 
 			init_search();
 #endif

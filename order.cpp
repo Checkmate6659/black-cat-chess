@@ -34,6 +34,7 @@ void score_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
         }
         else if (curmove.flags < F_CAPT) //neither capture nor promo
         {
+#ifdef DO_DIRECT_CHECKS
             if (curmove.score < SCORE_CHECK)
             {
                 uint16_t move_id = MOVE_ID(curmove);
@@ -54,6 +55,24 @@ void score_moves(MLIST *mlist, uint16_t hash_move, uint8_t ply)
                 }
             }
             else curmove.score += history[PSQ_INDEX(curmove)]; //just use history for checks
+#else
+            uint16_t move_id = MOVE_ID(curmove);
+
+            //Killer move handling
+            if (move_id == killers[ply][0]) //Primary killer move
+            {
+                curmove.score = SCORE_KILLER_PRIMARY;
+            }
+            else if (move_id == killers[ply][1]) //Secondary killer move
+            {
+                curmove.score = SCORE_KILLER_SECONDARY;
+            }
+            else
+            {
+                curmove.score = SCORE_QUIET;
+                curmove.score += history[PSQ_INDEX(curmove)];
+            }
+#endif
         }
 
         mlist->moves[i] = curmove;
