@@ -242,7 +242,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (!depth || ply == MAX_DEPTH)
 	{
 		qcall_count++;
-		return qsearch(stm, alpha, beta, QS_CHK);
+		return qsearch(stm, alpha, beta, QS_CHK, hash ^ Z_TURN);
 	}
 
 	//Internal Iterative Reduction
@@ -298,15 +298,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 			//Try search with null move (enemy's turn, ply + 1)
 			int16_t null_move_val = -search(stm ^ ENEMY, depth - 1 - reduction, -2, -beta, -beta + 1, hash ^ Z_NULLMOVE, 1, ply + 1, ply);
 
-			// if (panic) return 0; //check if we ran out of time (NOTE: this may not be useful)
-
 			if (null_move_val >= beta) //Null move beat beta
 				// return beta; //fail high, but hard
 				return std::min(null_move_val, (int16_t)NULLMOVE_MATE); //fail soft: lazy way of not returning erroneous mate scores
 		}
 	}
-
-	// depth = std::min(depth + incheck, MAX_DEPTH); //check extension (add safety to avoid overflow)
 
 	MLIST mlist;
 	generate_moves(&mlist, stm, last_target); //Generate all the moves! (pseudo-legal, still need to check for legality)
@@ -482,8 +478,47 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	return best_score; //FAIL SOFT
 }
 
-int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply)
+int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint64_t hash)
 {
+	hash ^= Z_TURN; //here the hash key is the same as this hash variable, since we don't have to care about ep
+
+	uint16_t hash_move = 0;
+	TT_ENTRY entry = get_entry(hash, MAX_DEPTH); //Try to get a TT entry
+
+	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
+	if (entry.flag) //TT hit
+	{
+		//TODO: check for collisions! (is the move legal, or pseudo-legal)
+		//and if there are collisions, get around them somehow
+		//Idea: write a function that can tell if a move ID is orthodox, or pseudo-legal
+
+		if (is_acceptable(entry.move)) //acceptable move
+		{
+			tt_hits++;
+
+			if (entry.flag == HF_EXACT) //exact hit: always return eval
+				return entry.eval; //FAIL SOFT
+			
+			//FAIL HARD
+			// else if (entry.flag == HF_BETA && entry.eval >= beta) //beta hit: return if beats beta (fail high)
+			// 	return beta;
+			// else if (entry.flag == HF_ALPHA && entry.eval <= alpha) //alpha hit: return if lower than current alpha (fail low)
+			// 	return alpha;
+			
+			//FAIL SOFT
+			if (entry.flag == HF_BETA)
+				alpha = std::max(alpha, entry.eval);
+			else if (entry.flag == HF_ALPHA)
+				beta = std::min(beta, entry.eval);
+			if (alpha >= beta)
+				return entry.eval;
+
+			tt_hits--;
+		}
+
+		hash_move = entry.move;
+	}
+
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 
 	//if stand pat causes a beta cutoff, return before generating moves (only when NOT in check!)
@@ -511,7 +546,9 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply)
 		if (mlist.count == 0) return alpha; //No captures available: return alpha
 	}
 	
-	score_moves(&mlist, 0, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+	score_moves(&mlist, hash_move, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
+
+	int16_t old_alpha = alpha;
 
 	while (mlist.count) //iterate through the move list backwards
 	{
@@ -547,16 +584,27 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply)
 
 		no_legal_move = false;
 
-		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha, check_ply - !(curmove.flags & F_CAPT));
+		int16_t eval = -qsearch(stm ^ ENEMY, -beta, -alpha, check_ply - !(curmove.flags & F_CAPT), hash);
 
 		unmake_move(stm, curmove, res);
 
 		alpha = std::max(alpha, eval);
 		if (alpha >= beta)
+		{
+			set_entry(hash, HF_BETA, 0, beta, curmove, MAX_DEPTH);
 			return beta;
+		}
 	}
 
 	if (no_legal_move) return MATE_SCORE + MAX_DEPTH; //checkmate: in check and no legal move
+
+	//if not mate, store in TT
+	else if (alpha > old_alpha)
+		set_entry(hash, HF_EXACT, 0, alpha, MOVE { 0, 0, 0, 0, 0 }, MAX_DEPTH); //exact score
+	else
+		set_entry(hash, HF_ALPHA, 0, alpha, MOVE { 0, 0, 0, 0, 0 }, MAX_DEPTH); //lower bound (fail low)
+
+
 	return alpha;
 }
 
@@ -571,9 +619,11 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
+	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; //hash, NOT key!
+
 	int16_t alpha = MATE_SCORE;
 	int16_t beta = -MATE_SCORE;
-	int16_t eval = qsearch(board_stm, alpha, beta, QS_CHK); //first guess at the score is just qsearch = depth 0
+	int16_t eval = qsearch(board_stm, alpha, beta, QS_CHK, hash); //first guess at the score is just qsearch = depth 0
 
 	MOVE best_move;
 
@@ -617,7 +667,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 			}
 
 			eval = search(board_stm, depth, board_last_target, alpha, beta,
-				board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN,  //root key has to be initialized for repetitions before the root
+				hash,  //root key has to be initialized for repetitions before the root
 				1, //don't allow NMP at the root, but allow it on subsequent plies
 				0, -half_move_clock);
 		} while(eval <= alpha || eval >= beta);
