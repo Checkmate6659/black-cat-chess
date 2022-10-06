@@ -480,9 +480,10 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint64_t hash)
 {
-	hash ^= Z_TURN; //here the hash key is the same as this hash variable, since we don't have to care about ep
-
 	uint16_t hash_move = 0;
+
+	/* hash ^= Z_TURN; //here the hash key is the same as this hash variable, since we don't have to care about ep
+
 	TT_ENTRY entry = get_entry(hash, MAX_DEPTH); //Try to get a TT entry
 
 	//if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
@@ -517,7 +518,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint
 		}
 
 		hash_move = entry.move;
-	}
+	} */
 
 	bool incheck = sq_attacked(plist[(stm & 16) ^ 16], stm ^ ENEMY) != 0xFF;
 
@@ -591,7 +592,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint
 		alpha = std::max(alpha, eval);
 		if (alpha >= beta)
 		{
-			set_entry(hash, HF_BETA, 0, beta, curmove, MAX_DEPTH);
+			// set_entry(hash, HF_BETA, 0, beta, curmove, MAX_DEPTH);
 			return beta;
 		}
 	}
@@ -599,10 +600,10 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint
 	if (no_legal_move) return MATE_SCORE + MAX_DEPTH; //checkmate: in check and no legal move
 
 	//if not mate, store in TT
-	else if (alpha > old_alpha)
+	/* else if (alpha > old_alpha)
 		set_entry(hash, HF_EXACT, 0, alpha, MOVE { 0, 0, 0, 0, 0 }, MAX_DEPTH); //exact score
 	else
-		set_entry(hash, HF_ALPHA, 0, alpha, MOVE { 0, 0, 0, 0, 0 }, MAX_DEPTH); //lower bound (fail low)
+		set_entry(hash, HF_ALPHA, 0, alpha, MOVE { 0, 0, 0, 0, 0 }, MAX_DEPTH); //lower bound (fail low) */
 
 
 	return alpha;
