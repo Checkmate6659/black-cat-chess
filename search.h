@@ -103,7 +103,9 @@ extern int16_t qs_see_chk;
 #define RFP_MARGIN 193 //Margin per ply (margin at depth N = N*RFP_MARGIN)
 #define RFP_IMPR 80 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
+//IIR parameters
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
+#define IIR_DEPTH 2
 
 // #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 

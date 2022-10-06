@@ -247,7 +247,17 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	//Internal Iterative Reduction
 	//TODO: try reducing by 2 or 3 ply
-	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply) depth--; //reduce depth if no TT hit, not root, and PV-node (IIR)
+	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply)
+	{
+		depth -= IIR_DEPTH; //reduce depth if no TT hit, not root, and PV-node (IIR)
+#if IIR_DEPTH > 1
+		if ((int8_t)depth <= 0) //go straight to qsearch
+		{
+			qcall_count++;
+			return qsearch(stm, alpha, beta, QS_CHK, hash ^ Z_TURN);
+		}
+#endif
+	}
 
 	RPT_INDEX rpt_index = key & RPT_MASK; //get the index to repetition hash table
 
