@@ -105,7 +105,7 @@ extern int16_t qs_see_chk;
 
 //IIR parameters
 #define TT_FAIL_REDUCTION_MINDEPTH 3 //Min depth to reduce PV-nodes where probing was unsuccessful
-#define IIR_DEPTH 2
+#define IIR_DEPTH 3
 
 // #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 
