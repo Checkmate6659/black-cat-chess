@@ -144,7 +144,7 @@ inline bool is_acceptable_capt(uint16_t move_id)
     uint8_t ptype = board[src] & PTYPE;
     uint8_t ray = RAYS[diff]; //a ray has to exist
     uint8_t mask = RAYMSK[ptype]; //the piece on the source square has to be able to perform that move
-    if (!(ray ^ mask)) return false; //the piece cannot perform that move; the move is illegal
+    if (!(ray & mask)) return false; //the piece cannot perform that move; the move is illegal
 
     if (ptype < BISHOP) //leaper
         return true;

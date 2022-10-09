@@ -273,8 +273,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	if (!incheck && ply >= 2) //if in check, improving stays false; also don't do this close to the root (otherwise buffer overflow)
 	{
 		//if possible, use TT to improve on static eval
-		// if (entry.flag & (HF_EXACT | (entry.eval > static_eval ? HF_BETA : HF_ALPHA))) static_eval = entry.eval;
-		// else set_entry(key, HF_EXACT, 0, static_eval, MOVE {0, 0, 0, 0, 0}); //store static eval in TT
+		if (entry.flag & (HF_EXACT | (entry.eval > static_eval ? HF_BETA : HF_ALPHA))) static_eval = entry.eval;
+		else set_entry(key, HF_EXACT, 0, static_eval, MOVE {0, 0, 0, 0, 0}, ply); //store static eval in TT
 
 		improving = static_eval > eval_stack[ply - 2]; //check if static eval is improving (TODO: test >=)
 	}
