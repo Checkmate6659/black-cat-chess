@@ -69,7 +69,7 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
-int16_t SEE_VALUES[] = {0, 100, 100, 400, 16383, 450, 675, 1300}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
+int16_t SEE_VALUES[] = {0, 100, 100, 388, 16383, 434, 682, 1306}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
 
 void print_board(uint8_t *b)
