@@ -10,7 +10,7 @@
 
 // #define __TEST_VERSION__
 // #define __TEST_NAME__ ""
-#define __ENGINE_VERSION__ "2.4-dev"
+#define __ENGINE_VERSION__ "2.4"
 
 
 typedef struct
@@ -23,9 +23,9 @@ typedef struct
 } OPTION;
 
 //UCI options
-//NOTE: this table is going to be modified to store option values (although this is completely unnecessary for now)
+//NOTE: this table is going to be modified to store option values
 OPTION uci_options[] = {
-	{"Hash", "spin", 1, 16384, 16, ""}, //Max hash size 16GB (cannot test!); theoretical max with u32 indices and 14B entries would be 28GB
+	{"Hash", "spin", 1, 16384, 16, ""}, //Max hash size 16GB (cannot test!); theoretical max with u32 indices and 14B entries would be 28GB (32GB with padding)
 
 #ifdef TUNING_MODE
 	{"AspiMargin", "spin", 1, 100, (double)aspi_margin, ""},
