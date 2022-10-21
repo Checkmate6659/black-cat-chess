@@ -710,7 +710,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 		}
 
 		if (search_end_time - end <= TM_CUTOFF_MUL * (end - start) + TM_CUTOFF_CONST && !benchmark) break; //probably not enough time for next iteration (TODO: add coef and tune)
-	}	
+	}
 
 	//print out the best move at the end of the search
 	if (!benchmark)
