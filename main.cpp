@@ -165,7 +165,7 @@ int main(int argc, char** argv)
 			// 	1, //don't allow NMP at the root, but allow it on subsequent plies
 			// 	0, -half_move_clock);
 
-			search_root(-1, i < 5 ? 13 : 9);
+			search_root(-1, true, true, i < 5 ? 13 : 9);
 		}
 
 		clock_t end = clock();
@@ -447,9 +447,12 @@ int main(int argc, char** argv)
 		else if (command == "go")
 		{
 			uint32_t time_ms = 0;
-			uint32_t engine_time = DEFAULT_ENGINE_TIME;
+			uint32_t engine_time = 1000;
 			uint32_t increment = 0;
 			uint8_t movestogo = DEFAULT_MOVESTOGO;
+			bool infinite = false;
+			bool movetime = false;
+			uint8_t depth = MAX_DEPTH;
 
 			while (input_stream)
 			{
@@ -460,8 +463,21 @@ int main(int argc, char** argv)
 				if (cur_info == "movetime") //forcing of the maximum move time
 				{
 					time_ms = atoi(cur_value.c_str()); //set time in ms
+					movetime = true;
 					break; //break out of the loop
 				}
+				if (cur_info == "infinite") //forcing of the maximum move time
+				{
+					infinite = true; //infinite search mode
+					break; //break out of the loop
+				}
+				if (cur_info == "depth") //forcing of the maximum move time
+				{
+					depth = atoi(cur_value.c_str()) + 1; //set depth in ply (we need to add 1)
+					infinite = true; //we don't want the search to get interrupted
+					break; //break out of the loop
+				}
+				
 				if (cur_info == "movestogo") movestogo = atoi(cur_value.c_str()); //set number of moves to go
 				else if (board_stm == WHITE) //engine plays white
 				{
@@ -475,9 +491,9 @@ int main(int argc, char** argv)
 				}
 			}
 
-			if(!time_ms) time_ms = alloc_time(engine_time, increment, movestogo); //time_ms has not been set by a movetime command, so we need to calculate it
+			if(!time_ms && !infinite) time_ms = alloc_time(engine_time, increment, movestogo); //time_ms has not been set by a movetime command, so we need to calculate it
 			// printf("time: %u\n", time_ms);
-			search_root(time_ms, MAX_DEPTH);
+			search_root(time_ms, movetime, infinite, depth);
 		}
 		else if (command  == "perft")
 		{

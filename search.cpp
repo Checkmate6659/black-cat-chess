@@ -620,9 +620,10 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint
 }
 
 
-void search_root(uint32_t time_ms, uint8_t fixed_depth)
+void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_depth)
 {
-	search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
+	if(!infinite) search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
+	else search_end_time = (long)((1U << 31) - 1); //infinite time
 	stack.ply = 0;
 
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
@@ -637,6 +638,36 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 	int16_t eval = qsearch(board_stm, alpha, beta, QS_CHK, hash); //first guess at the score is just qsearch = depth 0
 
 	MOVE best_move;
+	MLIST mlist;
+	generate_moves(&mlist, board_stm, board_last_target);
+
+	//count legal moves
+	uint8_t legal_moves = 0;
+	for (uint8_t i = 0; i < mlist.count; i++)
+	{
+		MOVE_RESULT result = make_move(board_stm, mlist.moves[i]);
+
+		if (sq_attacked(plist[(board_stm & 16) ^ 16], board_stm ^ ENEMY) == 0xFF)
+		{
+			legal_moves++; //increment the legal move counter if move is legal
+			if (pseudo_rng() % legal_moves == 0)
+				best_move = mlist.moves[i]; //pick a random legal move as the "default move" (forced move & safety)
+		}
+
+		unmake_move(board_stm, mlist.moves[i], result);
+	}
+
+	//play forced move
+	if (legal_moves == 1 && !movetime && !infinite)
+	{
+		std::cout << "info depth 1 score cp " << eval << " nodes 1 time 0 nps 0 pv";
+		print_move(best_move); //best_move is our only legal move at this point
+		std::cout << "\nbestmove ";
+		print_move(best_move); //best_move is our only legal move at this point
+		std::cout << std::endl;
+
+		return;
+	}
 
 	//iterative deepening loop
 	for (uint8_t depth = 1; depth < std::min(fixed_depth, (uint8_t)MAX_DEPTH); depth++) //increase depth until MAX_DEPTH reached
@@ -710,12 +741,19 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 			std::cout << std::endl;
 		}
 
-		//premature termination: probably not enough time for next iteration
-		if (search_end_time - end <=
-			TM_CUTOFF_MUL * (end - start)
-		  + TM_CUTOFF_MUL2 * prev_search_time
-		  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
-		  		break;
+		if (!movetime && !infinite) //time management in search: disable with fixed time search
+		{
+			//mate found, return immediately
+			//does not apply for getting mated however (since in the worst case there is nothing more to lose)
+			if (eval >= MAX_DEPTH - MATE_SCORE) break; //!= because in qsearch, ply is MAX_DEPTH
+
+			//premature termination: probably not enough time for next iteration
+			if (search_end_time - end <=
+				TM_CUTOFF_MUL * (end - start)
+			  + TM_CUTOFF_MUL2 * prev_search_time
+			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
+					break;
+		}
 
 		prev_search_time = end - start;
 	}

@@ -42,7 +42,7 @@ extern TT_INDEX tt_size;
 extern uint64_t prng_state; //PRNG state
 extern uint64_t zobrist_table[]; //Zobrist table (uses [piece][square] indexing, similar to history table)
 
-uint64_t pseudo_rng64(); //64-bit pseudo-random number generation (Xorshift64)
+uint64_t pseudo_rng(); //64-bit pseudo-random number generation (Xorshift64)
 void init_tt();
 void reallocate_tt(TT_INDEX size);
 void clear_tt();
