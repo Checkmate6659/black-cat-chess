@@ -649,6 +649,7 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 
 		//do search and measure elapsed time
 		clock_t start = clock();
+		clock_t prev_search_time = 0;
 
 		uint16_t alpha_margin = ASPI_MARGIN;
 		uint16_t beta_margin = ASPI_MARGIN;
@@ -709,7 +710,14 @@ void search_root(uint32_t time_ms, uint8_t fixed_depth)
 			std::cout << std::endl;
 		}
 
-		if (search_end_time - end <= TM_CUTOFF_MUL * (end - start) + TM_CUTOFF_CONST && !benchmark) break; //probably not enough time for next iteration (TODO: add coef and tune)
+		//premature termination: probably not enough time for next iteration
+		if (search_end_time - end <=
+			TM_CUTOFF_MUL * (end - start)
+		  + TM_CUTOFF_MUL2 * prev_search_time
+		  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
+		  		break;
+
+		prev_search_time = end - start;
 	}
 
 	//print out the best move at the end of the search

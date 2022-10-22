@@ -10,7 +10,9 @@
 #define OVERHEAD 20 //extra time in ms to account for communication delays
 
 //Cut off if next iteration will probably not finish before time runs out (larger values = more aggressive)
-#define TM_CUTOFF_MUL 0.9 //coef of previous search's length
+//TODO: TUNE!!!
+#define TM_CUTOFF_MUL 0.4 //coef of previous search's length
+#define TM_CUTOFF_MUL2 0.5 //coef of search at depth-2 length
 #define TM_CUTOFF_CONST -10 //constant time, in ms
 
 
