@@ -75,8 +75,8 @@ OPTION uci_options[] = {
 #else
 #ifdef TUNING_TM
 	{"DefaultMovestogo", "spin", 1, 100, (double)default_mtg, ""},
-	{"Mul1", "spin", -20000, 20000, (double)tm_mul, ""},
-	{"Mul2", "spin", -20000, 20000, (double)tm_mul2, ""},
+	{"Mul1", "spin", -20000, 20000, (double)(long)(tm_mul * 10000), ""},
+	{"Mul2", "spin", -20000, 20000, (double)(long)(tm_mul2 * 10000), ""},
 	{"Const", "spin", -1000, 1000, (double)tm_const, ""},
 #endif
 #endif
