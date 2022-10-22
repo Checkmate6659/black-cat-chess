@@ -7,7 +7,7 @@
 #define MIN_SEARCH_TIME 5 //minimum time to search in ms
 #define OVERHEAD 20 //extra time in ms to account for communication delays
 
-// #define TUNING_TM
+#define TUNING_TM
 
 //Cut off if next iteration will probably not finish before time runs out (larger values = more aggressive)
 //TODO: TUNE!!!

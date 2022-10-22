@@ -72,6 +72,13 @@ OPTION uci_options[] = {
 	{"QSChkPly", "spin", 0, 10, (double)qs_chk, ""},
 	{"QSSEENoChk", "spin", -500, 500, (double)qs_see_nochk, ""},
 	{"QSSEEChk", "spin", -500, 500, (double)qs_see_chk, ""},
+#else
+#ifdef TUNING_TM
+	{"DefaultMovestogo", "spin", 1, 100, (double)default_mtg, ""},
+	{"Mul1", "spin", -20000, 20000, (double)tm_mul, ""},
+	{"Mul2", "spin", -20000, 20000, (double)tm_mul2, ""},
+	{"Const", "spin", -1000, 1000, (double)tm_const, ""},
+#endif
 #endif
 };
 
@@ -336,6 +343,13 @@ int main(int argc, char** argv)
 			qs_see_chk = uci_options[44].val_float;
 
 			init_search();
+#else
+#ifdef TUNING_TM
+			default_mtg = uci_options[1].val_float;
+			tm_mul = uci_options[2].val_float / 10000;
+			tm_mul2 = uci_options[3].val_float / 10000;
+			tm_const = uci_options[4].val_float;
+#endif
 #endif
 		}
 		else if(command == "position")
@@ -477,7 +491,7 @@ int main(int argc, char** argv)
 					infinite = true; //we don't want the search to get interrupted
 					break; //break out of the loop
 				}
-				
+
 				if (cur_info == "movestogo") movestogo = atoi(cur_value.c_str()); //set number of moves to go
 				else if (board_stm == WHITE) //engine plays white
 				{
