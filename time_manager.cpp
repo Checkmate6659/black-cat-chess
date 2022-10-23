@@ -1,8 +1,8 @@
 #include "time_manager.h"
 
 #ifdef TUNING_TM
-int default_mtg = 30;
-double tm_mul = 0.4, tm_mul2 = 0.5;
+int default_mtg = 29;
+double tm_mul = 0.3763, tm_mul2 = 0.5358;
 int tm_const = -10;
 #endif
 
