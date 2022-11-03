@@ -382,10 +382,14 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 #endif
 		lmr -= curmove.score >= SCORE_QUIET + LMR_HISTORY_THRESHOLD; //reduce less for moves with good history
 
-		lmr = std::max((int8_t)0, std::min(lmr, (int8_t)(depth - 1))); //make sure it's not dropping into qsearch or extending
+		lmr = std::max((int8_t)0, lmr); //make sure it's not extending
 
 		if (!incheck && curmove.score < LOUD_MOVE) lmr_move_count++; //variable doesn't get increased if in check or if there are tactical moves
 		else lmr = 0; //don't do LMR in check or on tactical moves
+
+		//extending when dropping into pawn endgame (done here for simplicity)
+		lmr -= 2 * (!total_pieces && res.piece > BPAWN); //extend by 2 ply when entering pawn endgame (Rebel does 3)
+		lmr = std::min(lmr, (int8_t)(depth - 1)); //make sure it's not dropping into qsearch
 
 		node_count++;
 		curmove_hash ^= move_hash(stm, curmove);
