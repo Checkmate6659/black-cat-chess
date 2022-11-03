@@ -111,6 +111,7 @@ extern const uint8_t noffsets[], offset_idx[];
 extern const int8_t offsets[];
 
 extern int16_t SEE_VALUES[];
+extern uint8_t total_pieces;
 
 uint8_t sq_attacked(uint8_t target, uint8_t attacker); //Square Attacked By function with 0x88 Vector Attacks; returns square of first attacker
 

@@ -71,6 +71,8 @@ const int8_t offsets[] = {
 
 int16_t SEE_VALUES[] = {0, 100, 100, 388, 16383, 434, 682, 1306}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
+uint8_t total_pieces = 14; //total number of white and black pieces, excluding pawns/kings
+
 
 void print_board(uint8_t *b)
 {
@@ -111,7 +113,7 @@ void print_board_full(uint8_t* b)
 		if ((i & 7) == 7) std::cout << std::endl;
 	}
 
-	std::cout << "\n\n";
+	std::cout << "\ntotal_pieces = " << (int)total_pieces << "\n";
 }
 
 void print_move(MOVE move)
@@ -140,6 +142,8 @@ void load_fen(std::string fen)
 	// std::cout << fullmove << std::endl;
 
 	half_move_clock = halfmove;
+
+	total_pieces = 0;
 
 	uint8_t sq = 0;
 	uint8_t white_plist_idx = 0, black_plist_idx = 0;
@@ -181,6 +185,9 @@ void load_fen(std::string fen)
 				case 'Q': board[sq] = 017; break;
 				case 'q': board[sq] = 027; break;
 			}
+
+			//count up the pieces
+			if ((board[sq] & PTYPE) > KING || (board[sq] & PTYPE) == KNIGHT) total_pieces++;
 
 			if (c < 'a')
 			{
@@ -672,6 +679,8 @@ MOVE_RESULT make_move(uint8_t stm, MOVE move)
 	{
 		if (result.piece) //capturing (not ep)
 		{
+			if ((result.piece & PTYPE) > BPAWN) total_pieces--; //a piece (not pawn) has been captured
+
 			plist[result.plist_idx] = -1; //Signal captured piece by off-the-board coordinate in piece list
 
 			//update dirty piece
@@ -747,6 +756,10 @@ void unmake_move(uint8_t stm, MOVE move, MOVE_RESULT move_result)
 	{
 		board[move.tgt] = 0; //target clear
 		move.tgt -= (stm - 12) << 2; //readjusting target
+	}
+	else
+	{
+		if ((move_result.piece & PTYPE) > BPAWN) total_pieces++;
 	}
 
 	//2nd half
