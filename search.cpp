@@ -388,7 +388,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		else lmr = 0; //don't do LMR in check or on tactical moves
 
 		//extending when dropping into pawn endgame (done here for simplicity)
-		lmr -= 3 * (!total_pieces && res.piece > BPAWN); //extend by 3 ply when entering pawn endgame (Rebel does 3)
+		lmr -= !total_pieces && res.piece > BPAWN; //extend by 1 ply when entering pawn endgame (Rebel does 3)
 		lmr = std::min(lmr, (int8_t)(depth - 1)); //make sure it's not dropping into qsearch
 
 		node_count++;
