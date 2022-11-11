@@ -194,6 +194,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	if (ply - last_zeroing_ply >= 100) return FIFTY_MOVE; //if we've gone over 100 ply without zeroing, then the game is a draw
 
+	bool is_pv = (beta - alpha) > 1; //set if PV node
+
 	hash ^= Z_TURN; //switch sides
 	uint64_t key = hash ^ Z_DPP(last_target); //hash is just the pieces position and castling rights, we need to complement it with turn/dpp
 	if (last_target == (uint8_t)-2) key ^= Z_DPP(last_target);
@@ -247,7 +249,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 	//Internal Iterative Reduction
 	//TODO: try reducing by 2 or 3 ply
-	if (!entry.flag && beta - alpha > 1 && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply)
+	if (!entry.flag && is_pv && depth >= TT_FAIL_REDUCTION_MINDEPTH && ply)
 	{
 		depth -= IIR_DEPTH; //reduce depth if no TT hit, not root, and PV-node (IIR)
 #if IIR_DEPTH > 1
@@ -284,7 +286,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	uint8_t lmr_move_count = 0;
 
 	if (incheck && depth > CHKEXT_MINDEPTH) depth++; //check extension
-	else if (beta - alpha == 1) //Non-PV node, not extended in this node (TODO: not extended in entire line)
+	else if (!is_pv) //Non-PV node, not extended in this node (TODO: not extended in entire line)
 	{
 		//Reverse futility pruning/static null move pruning (TODO: try with !incheck)
 		if (/* depth <= RFP_MAX_DEPTH */ true											//RFP max depth shown to be useless! uncapped RFP
@@ -349,7 +351,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		//Late move pruning: skip late quiet moves
-		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && beta - alpha == 1 && ply)
+		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && ply)
 		{
 			unmake_move(stm, curmove, res); //skip move
 			continue;
@@ -370,12 +372,12 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		int8_t lmr = lmr_table[depth][lmr_move_count]; //fetch LMR
 
 #ifdef TUNING_MODE //WARNING: tuning bools doesn't work! testing would be a much better solution
-		if(lmr_do_pv) lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		if(lmr_do_pv) lmr += !is_pv; //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		if(lmr_do_impr) lmr += !improving; //reduce less for improving
 		if(lmr_do_chk_kmove) lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		if(lmr_do_killer) lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
 #else //king moves in check, very suspicious
-		lmr += (beta - alpha == 1); //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
+		lmr += !is_pv; //reduce less for PV (LMR is a fail-low/loss-seeking heuristic)
 		lmr += !improving; //reduce less for improving
 		lmr += incheck && !(board[curmove.tgt | 8] & 15); //reduce for King moves that escape checks
 		lmr -= curmove.score >= SCORE_KILLER_SECONDARY; //reduce less for killer moves
@@ -441,7 +443,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					if (panic) return 0; //should NOT set TT entries when out of time!
 
 					//Handle hash entry: upper bound (fail high)
-					set_entry(key, HF_BETA, beta - alpha != 1, depth, beta, curmove, ply);
+					set_entry(key, HF_BETA, is_pv, depth, beta, curmove, ply);
 
 					//Killer move: not a capture nor a promotion
 					if (curmove.flags < F_CAPT)
@@ -484,9 +486,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha)
-		set_entry(key, HF_EXACT, beta - alpha != 1, depth, alpha, best_move, ply); //exact score
+		set_entry(key, HF_EXACT, is_pv, depth, alpha, best_move, ply); //exact score
 	else
-		set_entry(key, HF_ALPHA, beta - alpha != 1, depth, alpha, best_move, ply); //lower bound (fail low)
+		set_entry(key, HF_ALPHA, is_pv, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
 	return best_score; //FAIL SOFT
@@ -563,7 +565,7 @@ int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint
 	
 	score_moves(&mlist, hash_move, MAX_DEPTH - 1); //sort the moves by score (ply is set to maximum available ply)
 
-	int16_t old_alpha = alpha;
+	// int16_t old_alpha = alpha;
 
 	while (mlist.count) //iterate through the move list backwards
 	{
@@ -770,3 +772,4 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 		std::cout << std::endl;
 	}
 }
+
