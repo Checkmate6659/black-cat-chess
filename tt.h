@@ -83,7 +83,7 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     if (entry.flag)
     {
         // if (depth < entry.depth)
-        if(depth + 2 * is_pv <= entry.depth - 4)
+        if(depth + 2 * is_pv <= entry.depth - 3)
             return;
     }
     
