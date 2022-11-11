@@ -441,7 +441,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 					if (panic) return 0; //should NOT set TT entries when out of time!
 
 					//Handle hash entry: upper bound (fail high)
-					set_entry(key, HF_BETA, depth, beta, curmove, ply);
+					set_entry(key, HF_BETA, beta - alpha != 1, depth, beta, curmove, ply);
 
 					//Killer move: not a capture nor a promotion
 					if (curmove.flags < F_CAPT)
@@ -484,9 +484,9 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	//Handle hash entry
 	if (panic) return 0; //should NOT set TT entries when out of time!
 	else if (alpha > old_alpha)
-		set_entry(key, HF_EXACT, depth, alpha, best_move, ply); //exact score
+		set_entry(key, HF_EXACT, beta - alpha != 1, depth, alpha, best_move, ply); //exact score
 	else
-		set_entry(key, HF_ALPHA, depth, alpha, best_move, ply); //lower bound (fail low)
+		set_entry(key, HF_ALPHA, beta - alpha != 1, depth, alpha, best_move, ply); //lower bound (fail low)
 
 	// return alpha; //FAIL HARD
 	return best_score; //FAIL SOFT

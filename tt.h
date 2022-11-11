@@ -20,10 +20,6 @@
 #define Z_DPP(lt) ((lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128])) //black WPAWN board (unused); uses central 2 rows of the board
 #define Z_NULLMOVE (zobrist_table[130]) //c8 entry on black WPAWN board (unused, since white pawns are not black); use for null move pruning
 
-#define REPLACEMENT_SCHEME(depth, entry_depth) ((uint16_t)(depth) * REPLACEMENT_DEN >= (uint16_t)(entry_depth) * REPLACEMENT_NUM) //only replace when depth * DEN > entry_depth * NUM
-#define REPLACEMENT_NUM 1 //replacement scheme numerator
-#define REPLACEMENT_DEN 1 //replacement scheme denominator
-
 
 typedef uint32_t TT_INDEX; //Change to uint64_t on large TT sizes (above ~28GB)
 
@@ -75,7 +71,7 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
 }
 
 //Set a TT entry (if improving depth)
-inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, MOVE move, uint8_t ply)
+inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int16_t eval, MOVE move, uint8_t ply)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % tt_size;
@@ -84,8 +80,12 @@ inline void set_entry(uint64_t key, uint8_t flag, uint8_t depth, int16_t eval, M
     //insufficient depth
     // if (entry.depth > depth)
 
-    if (entry.flag && !REPLACEMENT_SCHEME(depth, entry.depth))
-        return;
+    if (entry.flag)
+    {
+        if (depth < entry.depth)
+        // if(depth + 2 * is_pv <= entry.depth - 4)
+            return;
+    }
     
     //less precise flag (exact < upperbound < lowerbound)
     if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
