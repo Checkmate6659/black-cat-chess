@@ -635,7 +635,7 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
 
-	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
+	// clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
 	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; //hash, NOT key!
 

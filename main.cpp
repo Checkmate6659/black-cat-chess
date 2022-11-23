@@ -157,7 +157,7 @@ int main(int argc, char** argv)
 		{
 			load_fen(benchfens[i]);
 
-			// clear_tt(); //clear the transposition table
+			// clear_tt(); //clear the transposition table (enabling/disabling this changes results!)
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100;
 
@@ -352,9 +352,14 @@ int main(int argc, char** argv)
 #endif
 #endif
 		}
+		else if(command == "ucinewgame")
+		{
+			clear_tt(); //NEW GAME: CLEAR TT
+			clear_history(); //Also clear history scores
+		}
 		else if(command == "position")
 		{
-			clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0)
+			// clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0) (no longer the case)
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100; //invalid ply: game must have been adjudicated previously
 
