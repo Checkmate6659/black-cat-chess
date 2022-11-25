@@ -359,7 +359,7 @@ int main(int argc, char** argv)
 		}
 		else if(command == "position")
 		{
-			// clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0) (no longer the case)
+			clear_tt(); //the TT is littered with the previous position results, and that could cause collisions (root hash is ALWAYS 0) (no longer the case)
 			for (RPT_INDEX i = 0; i < RPT_SIZE; i++) //clear the repetition table
 				repetition_table[i] = -100; //invalid ply: game must have been adjudicated previously
 
