@@ -93,36 +93,36 @@ extern int16_t qs_see_chk;
 #define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
 
 #define QS_CHK 0 //look at QS_CHK check max in qsearch (disabled for now)
-#define QS_SEE_NOCHK 83
-#define QS_SEE_CHK 30
+#define QS_SEE_NOCHK 108
+#define QS_SEE_CHK 58
 
-#define ASPI_MARGIN 44 //Starting aspiration window margin
+#define ASPI_MARGIN 50 //Starting aspiration window margin
 #define MAX_ASPI_MARGIN 2000 //Maximum aspiration window margin (2000cp); beyond this, expand all the way to MATE_SCORE
-#define ASPI_MULTIPLIER 1.95 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
-#define ASPI_CONSTANT 49 //add this to the margin each time we fail
+#define ASPI_MULTIPLIER 1.93 //multiply corresponding margin by this each time we fail (can be integer, rational A/B or float)
+#define ASPI_CONSTANT 46 //add this to the margin each time we fail
 
 // #define RFP_MAX_DEPTH 17 //Max depth when RFP is active (maybe it should be uncapped?)
-#define RFP_MARGIN 185 //Margin per ply (margin at depth N = N*RFP_MARGIN)
-#define RFP_IMPR 84 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
+#define RFP_MARGIN 197 //Margin per ply (margin at depth N = N*RFP_MARGIN)
+#define RFP_IMPR 78 //Remove this from margin on improving (likely fail high) nodes, to increase fail high count
 
 //IIR parameters
-#define TT_FAIL_REDUCTION_MINDEPTH 2 //Min depth to reduce PV-nodes where probing was unsuccessful
-#define IIR_DEPTH 2
+#define TT_FAIL_REDUCTION_MINDEPTH 1 //Min depth to reduce PV-nodes where probing was unsuccessful
+#define IIR_DEPTH 2 //TODO: tune!
 
 // #define DELTA 2069 //delta pruning threshold (TODO: test without any delta pruning)
 
-#define NULL_MOVE_REDUCTION_CONST 4
-#define NULL_MOVE_REDUCTION_DEPTH 11
+#define NULL_MOVE_REDUCTION_CONST 5
+#define NULL_MOVE_REDUCTION_DEPTH 8
 // #define NULL_MOVE_REDUCTION_MIN 44 //TODO: test uncapped
-#define NULL_MOVE_REDUCTION_DIV 787
+#define NULL_MOVE_REDUCTION_DIV 644
 
-#define LMR_CONST 0.6389 //LMR constant (Ethereal: 0.75)
-#define LMR_MUL 0.0572 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
-#define LMR_SQRT_MUL 0.1347
-#define LMR_DIST_MUL 0.0069
-#define LMR_DEPTH_MUL 0.0253
+#define LMR_CONST 0.7896 //LMR constant (Ethereal: 0.75)
+#define LMR_MUL 0.1131 //LMR multiplier; original (from Ethereal) was 1/2.25 = 0.4444... (0.4444 gives same result; 0.44 gives less nodes but untested)
+#define LMR_SQRT_MUL 0.0775
+#define LMR_DIST_MUL 0.0266
+#define LMR_DEPTH_MUL 0.0931
 
-#define LMR_HISTORY_THRESHOLD 3423
+#define LMR_HISTORY_THRESHOLD 3029
 
 #define SEE_MAX_DEPTH 9 //TODO: tune! (or get rid of entirely)
 #define SEE_NOISY 30 //*depth^2

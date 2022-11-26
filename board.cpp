@@ -69,7 +69,7 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
-int16_t SEE_VALUES[] = {0, 100, 100, 388, 16383, 434, 682, 1306}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
+int16_t SEE_VALUES[] = {0, 100, 100, 406, 16383, 423, 663, 1314}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
 uint8_t total_pieces = 14; //total number of white and black pieces, excluding pawns/kings
 
@@ -132,7 +132,7 @@ void load_fen(std::string fen)
 	char position[80];
 	char turn;
 	char castling[5], enpassant[3];
-	int halfmove, fullmove;
+	int halfmove, fullmove;	//TODO: use fullmove for aging TT
 	sscanf(fen.c_str(), "%s %c %s %s %d %d", position, &turn, castling, enpassant, &halfmove, &fullmove);
 	// std::cout << position << std::endl;
 	// std::cout << turn << std::endl;

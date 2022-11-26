@@ -1,23 +1,23 @@
 #include "search.h" //search.h includes board.h, which also includes iostream
 
 #ifdef TUNING_MODE
-int aspi_margin = 41, max_aspi_margin = 2000, aspi_constant = 42;
-float aspi_mul = 164; //x100
-int rfp_max_depth = 17, rfp_margin = 193, rfp_impr = 80;
-int iid_reduction_d = 3;
+int aspi_margin = 44, max_aspi_margin = 2000, aspi_constant = 49;
+float aspi_mul = 195; //x100
+int rfp_max_depth = 17, rfp_margin = 185, rfp_impr = 84;	//rfp_max_depth unused (may retune later)
+int iid_reduction_d = 2;
 int dprune = 2069; //DISABLED
-int nmp_const = 3, nmp_depth = 12, nmp_evalmin = 44, nmp_evaldiv = 835; //evalmin DISABLED
-float lmr_const = 7090, lmr_mul = 1296; //x10000; actually the lmr_mul is for log(d)*log(m)
+int nmp_const = 4, nmp_depth = 11, nmp_evalmin = 44, nmp_evaldiv = 787; //evalmin DISABLED
+float lmr_const = 6389, lmr_mul = 572; //x10000; actually the lmr_mul is for log(d)*log(m)
 
 //TODO: do tests instead of tuning for bools, its not good to tune bools with spsa
 bool lmr_do_pv = true;
 bool lmr_do_impr = true;
 bool lmr_do_chk_kmove = true;
 bool lmr_do_killer = true;
-uint32_t lmr_history_threshold = 3321;
+uint32_t lmr_history_threshold = 3423;
 
 //Extra LMR parameters, for better LMR (TODO: try removing, since they're always tiny)
-float lmr_sqrt_mul = 899, lmr_dist_mul = 266, lmr_depth_mul = 331; //all x10000
+float lmr_sqrt_mul = 1347, lmr_dist_mul = 69, lmr_depth_mul = 253; //all x10000
 
 //HISTORY LEAF PRUNING REMOVED: THESE VALUES DO NOT MATTER! TODO: clean this up
 bool hlp_do_improving = true; //do history leaf pruning on improving nodes
@@ -27,16 +27,16 @@ uint32_t hlp_reduce = 5000, hlp_prune = 2500;
 uint8_t chkext_depth = 6; //check extension minimum depth
 
 uint8_t see_depth = 9; //SEE pruning in main search max depth
-int16_t see_noisy = 32, see_quiet = 84; //in centipawns; noisy: *depth^2 (quad); quiet: *depth (linear)
+int16_t see_noisy = 30, see_quiet = 87; //in centipawns; noisy: *depth^2 (quad); quiet: *depth (linear)
 
 //LMP parameters (all x10000)
-double lmp_noimpr_const = 26997, lmp_noimpr_linear = 5189, lmp_noimpr_quad = 7996;
-double lmp_impr_const = 43100, lmp_impr_linear = 14197, lmp_impr_quad = 12967;
+double lmp_noimpr_const = 25997, lmp_noimpr_linear = 4295, lmp_noimpr_quad = 8683;
+double lmp_impr_const = 42956, lmp_impr_linear = 11419, lmp_impr_quad = 11856;
 
 //QS stuff
 int qs_chk = 0; //check ply
-int16_t qs_see_nochk = 121;
-int16_t qs_see_chk = 41;
+int16_t qs_see_nochk = 83;
+int16_t qs_see_chk = 30;
 #endif
 
 
@@ -131,8 +131,8 @@ void init_search() //Initialize the late move reduction table
 		lmp_table[depth][0] = std::min(lmp_noimpr_const/10000. + lmp_noimpr_linear/10000. * depth + lmp_noimpr_quad/10000. * depth * depth, 255.0); //not improving
 		lmp_table[depth][1] = std::min(lmp_impr_const/10000. + lmp_impr_linear/10000. * depth + lmp_impr_quad/10000. * depth * depth, 255.0); //improving
 #else
-		lmp_table[depth][0] = std::min(2.5997 + 0.4295 * depth + 0.8683 * depth * depth, 255.0); //not improving
-		lmp_table[depth][1] = std::min(4.2956 + 1.1419 * depth + 1.1856 * depth * depth, 255.0); //improving
+		lmp_table[depth][0] = std::min(2.2438 + 0.5023 * depth + 0.9026 * depth * depth, 255.0); //not improving
+		lmp_table[depth][1] = std::min(4.4631 + 1.3275 * depth + 1.2410 * depth * depth, 255.0); //improving
 #endif
 	}
 }
@@ -635,6 +635,8 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
 		pv_length[i] = 0;
 
+	//NOTE: clearing hist is probably bad, but not doing it lost lots of elo
+	//May be caused by lack of tuning
 	// clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
 	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; //hash, NOT key!
