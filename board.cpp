@@ -69,7 +69,7 @@ const int8_t offsets[] = {
 	0x10, 0x11, 0x0F, //black pawn
 };
 
-int16_t SEE_VALUES[] = {0, 100, 100, 406, 16383, 423, 663, 1314}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
+int16_t SEE_VALUES[] = {0, 100, 100, 397, 16383, 443, 694, 1311}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
 uint8_t total_pieces = 14; //total number of white and black pieces, excluding pawns/kings
 

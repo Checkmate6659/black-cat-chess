@@ -131,8 +131,8 @@ void init_search() //Initialize the late move reduction table
 		lmp_table[depth][0] = std::min(lmp_noimpr_const/10000. + lmp_noimpr_linear/10000. * depth + lmp_noimpr_quad/10000. * depth * depth, 255.0); //not improving
 		lmp_table[depth][1] = std::min(lmp_impr_const/10000. + lmp_impr_linear/10000. * depth + lmp_impr_quad/10000. * depth * depth, 255.0); //improving
 #else
-		lmp_table[depth][0] = std::min(2.2438 + 0.5023 * depth + 0.9026 * depth * depth, 255.0); //not improving
-		lmp_table[depth][1] = std::min(4.4631 + 1.3275 * depth + 1.2410 * depth * depth, 255.0); //improving
+		lmp_table[depth][0] = std::min(2.5149 + 0.4230 * depth + 0.8905 * depth * depth, 255.0); //not improving
+		lmp_table[depth][1] = std::min(4.4577 + 1.0297 * depth + 1.1343 * depth * depth, 255.0); //improving
 #endif
 	}
 }
@@ -636,8 +636,8 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 		pv_length[i] = 0;
 
 	//NOTE: clearing hist is probably bad, but not doing it lost lots of elo
-	//May be caused by lack of tuning
-	// clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
+	//Not because lack of tuning
+	clear_history(); //clear history (otherwise risk of saturation, which makes history useless)
 
 	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; //hash, NOT key!
 
