@@ -100,6 +100,7 @@ extern uint8_t plist[32];
 extern uint8_t board_stm;
 extern uint8_t board_last_target;
 extern int8_t half_move_clock;
+extern uint8_t ply256;
 
 extern NNUEstack stack;
 

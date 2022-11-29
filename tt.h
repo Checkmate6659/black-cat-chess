@@ -29,6 +29,7 @@ typedef struct {
     uint8_t depth; //The depth of the entry
     int16_t eval; //The evaluation of the position
     uint16_t move; //The best move of the previous search
+    uint8_t ply256;
 } TT_ENTRY;
 
 extern TT_ENTRY *transpo_table;
@@ -67,7 +68,7 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
             return entry; //Hit!
         }
 
-    return TT_ENTRY { 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)
+    return TT_ENTRY { 0, 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)
 }
 
 //Set a TT entry (if improving depth)
@@ -83,7 +84,8 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     if (entry.flag)
     {
         // if (depth < entry.depth)
-        if(depth + 2 * is_pv <= entry.depth - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+        uint8_t age = (ply256 - entry.ply256) / 2; //age of entry in full moves: a higher age means it can be replaced more easily
+        if(depth + 2 * is_pv <= entry.depth - age - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
             return;
     }
 
@@ -102,6 +104,7 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     transpo_table[tt_index].depth = depth;
     transpo_table[tt_index].eval = eval;
     transpo_table[tt_index].move = MOVE_ID(move);
+    transpo_table[tt_index].ply256 = ply256; //base ply (for calculating aging)
 }
 
 //TODO: improve this function!

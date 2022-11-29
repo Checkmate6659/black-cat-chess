@@ -450,6 +450,7 @@ int main(int argc, char** argv)
 					make_move(board_stm, input_move); //make the move
 					board_stm ^= ENEMY; //switch sides
 					board_last_target = (input_move.flags & F_DPP) ? tgt : -2; //set the last target square if we made a double pawn push
+					ply256++; //increase base ply
 					input_stream >> command; //try reading next move
 				}
 

@@ -46,6 +46,7 @@ uint8_t plist[] = {
 uint8_t board_stm = WHITE;
 uint8_t board_last_target = -2;
 int8_t half_move_clock = 0;
+uint8_t ply256 = 0;
 
 NNUEstack stack = { {}, 2 }; //NNUE stack; has to be defined here to get access to it in make_move and unmake_move
 
@@ -142,6 +143,7 @@ void load_fen(std::string fen)
 	// std::cout << fullmove << std::endl;
 
 	half_move_clock = halfmove;
+	ply256 = fullmove * 2 + (turn == 'b'); //game ply % 256 (for aging TT)
 
 	total_pieces = 0;
 
