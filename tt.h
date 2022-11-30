@@ -83,8 +83,7 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
 
     if (entry.flag)
     {
-        // if (depth < entry.depth)
-        uint8_t age = (ply256 - entry.ply256) / 2; //age of entry in full moves: a higher age means it can be replaced more easily
+        uint8_t age = (ply256 - entry.ply256) / 4; //age of entry: a higher age means it can be replaced more easily
         if(depth + 2 * is_pv <= entry.depth - age - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
             return;
     }
