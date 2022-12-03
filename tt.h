@@ -4,8 +4,10 @@
 #define __TT_H__
 
 #include "board.h"
-#include "eval.h" //mate scores (TODO)
+#include "eval.h"
 
+
+// #define TT_TUNING_MODE
 
 //TT size (default is 1 << 24 = 16777216)
 #define TT_SIZE ((1 << 24) / sizeof(TT_ENTRY))
@@ -31,6 +33,10 @@ typedef struct {
     uint16_t move; //The best move of the previous search
     uint8_t ply256;
 } TT_ENTRY;
+
+#ifdef TT_TUNING_MODE
+extern int TT1, TT2, TT3, TT4, TT5; //tuning only
+#endif
 
 extern TT_ENTRY *transpo_table;
 extern TT_INDEX tt_size;
@@ -83,8 +89,12 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
 
     if (entry.flag)
     {
-        uint8_t age = (ply256 - entry.ply256) / 4; //age of entry: a higher age means it can be replaced more easily
-        if(depth + 2 * is_pv <= entry.depth - age - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+        uint8_t age = (ply256 - entry.ply256) / 2; //age of entry: a higher age means it can be replaced more easily
+#ifdef TT_TUNING_MODE
+        if(TT1 * depth + TT2 * is_pv <= TT3 * entry.depth - TT4 * age - TT5) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+#else
+        if(100 * depth + 218 * is_pv <= 122 * entry.depth - 67 * age - 298) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+#endif
             return;
     }
 

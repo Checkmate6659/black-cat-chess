@@ -8,6 +8,10 @@ uint64_t zobrist_table[2048] = { 0 }; //NOTE: this Zobrist table is larger than 
 
 TT_INDEX tt_size = TT_SIZE;
 
+#ifdef TT_TUNING_MODE
+int TT1 = 100, TT2 = 218, TT3 = 122, TT4 = 67, TT5 = 298; //tuning only (TT1 not tuned; reference value)
+#endif
+
 uint64_t pseudo_rng()
 {
     prng_state ^= prng_state << 13;

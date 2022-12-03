@@ -78,6 +78,13 @@ OPTION uci_options[] = {
 	{"Mul1", "spin", -20000, 20000, (double)(long)(tm_mul * 10000), ""},
 	{"Mul2", "spin", -20000, 20000, (double)(long)(tm_mul2 * 10000), ""},
 	{"Const", "spin", -1000, 1000, (double)tm_const, ""},
+#else
+#ifdef TT_TUNING_MODE
+	{"TT2", "spin", -1000, 1000, (double)TT2, ""},
+	{"TT3", "spin", -1000, 1000, (double)TT3, ""},
+	{"TT4", "spin", -1000, 1000, (double)TT4, ""},
+	{"TT5", "spin", -1000, 1000, (double)TT5, ""},
+#endif
 #endif
 #endif
 };
@@ -349,6 +356,13 @@ int main(int argc, char** argv)
 			tm_mul = uci_options[2].val_float / 10000;
 			tm_mul2 = uci_options[3].val_float / 10000;
 			tm_const = uci_options[4].val_float;
+#else
+#ifdef TT_TUNING_MODE
+			TT2 = uci_options[1].val_float;
+			TT3 = uci_options[2].val_float;
+			TT4 = uci_options[3].val_float;
+			TT5 = uci_options[4].val_float;
+#endif
 #endif
 #endif
 		}
