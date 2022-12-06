@@ -4,8 +4,8 @@
 #include <math.h>
 #include "board.h"
 
-#define MIN_SEARCH_TIME 2 //minimum time to search in ms
-#define OVERHEAD 10 //extra time in ms to account for communication delays
+#define MIN_SEARCH_TIME 5 //minimum time to search in ms
+#define OVERHEAD 12 //extra time in ms to account for communication delays
 
 // #define TUNING_TM
 
@@ -25,6 +25,7 @@ extern int tm_const;
 #define TM_CUTOFF_MUL 0.3763 //coef of previous search's length
 #define TM_CUTOFF_MUL2 0.5358 //coef of search at depth-2 length
 #define TM_CUTOFF_CONST -10 //constant time, in ms
+#define TM_HARD_TERMINATION 3 //when 3ms or less remaining, do not keep searching and cut off immediately
 #endif
 
 

@@ -749,7 +749,7 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			std::cout << std::endl;
 		}
 
-		if (!movetime && !infinite) //time management in search: disable with fixed time search
+		if (!movetime && !infinite) //time management in search: disable with fixed time (or infinite) search
 		{
 			//mate found, return immediately
 			//does not apply for getting mated however (since in the worst case there is nothing more to lose)
@@ -761,6 +761,9 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			  + TM_CUTOFF_MUL2 * prev_search_time
 			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
 					break;
+			
+			//hard termination (for low-time situations)
+			if (search_end_time - end <= TM_HARD_TERMINATION) break;
 		}
 
 		prev_search_time = end - start;
