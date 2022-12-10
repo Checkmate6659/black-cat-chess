@@ -89,12 +89,12 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
 
     if (entry.flag)
     {
-        uint8_t age = (ply256 - entry.ply256) / 2; //age of entry (normally without minus sign at front): a higher age means it can be replaced more easily
+        uint8_t age = (ply256 + ply - entry.ply256) / 2; //age of entry: a higher age means it can be replaced more easily
         //with minus sign, no matter the weight of the age, the bench is the same (wtf?)
 #ifdef TT_TUNING_MODE
         if(TT1 * depth + TT2 * is_pv <= TT3 * entry.depth - TT4 * age - TT5) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
 #else
-        if(100 * depth + 200 * is_pv <= 100 * entry.depth - 5 * age - 300) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+        if(100 * depth + 200 * is_pv <= 100 * entry.depth - 10 * age - 300) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
 #endif
             return;
     }
@@ -114,7 +114,7 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     transpo_table[tt_index].depth = depth;
     transpo_table[tt_index].eval = eval;
     transpo_table[tt_index].move = MOVE_ID(move);
-    transpo_table[tt_index].ply256 = ply256; //base ply (for calculating aging)
+    transpo_table[tt_index].ply256 = ply256 + ply; //entry's ply (for calculating aging)
 }
 
 //TODO: improve this function!
