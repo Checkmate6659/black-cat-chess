@@ -87,10 +87,6 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
             return;
     }
 
-    //less precise flag (exact < upperbound < lowerbound)
-    if (entry.flag && entry.flag < flag) //TODO: try inverting values of alpha and beta
-        return;
-
     //Storage of mate scores
     if (eval < MATE_SCORE + 256) //getting mated
         eval -= ply;
