@@ -50,13 +50,12 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
 {
     // TT_INDEX tt_index = key & (TT_SIZE - 1);
     TT_INDEX tt_index = key % tt_size;
-    TT_ENTRY entry = transpo_table[tt_index];
+    TT_ENTRY entry;
 
-    // assert(tt_index < TT_SIZE);
-    // if (entry.key == key && entry.flag)
-    //     if (entry.eval %5 != 0 && !IS_MATE(entry.eval)) printf("BAD EVAL %d\n", entry.eval);
-
-    if (entry.key == key && entry.flag) //A valid entry with the right key
+    for (uint8_t i = 0; i < 4; i++) //cycle through 4 entries (SF; SF; SF; AlwaysReplace)
+    {
+        entry = transpo_table[(tt_index + i) % tt_size];
+        if (entry.key == key && entry.flag) //A valid entry with the right key
         {
             //undo mate score storage stuff
             if (entry.eval < MATE_SCORE + 256) //getting mated
@@ -66,6 +65,7 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
 
             return entry; //Hit!
         }
+    }
 
     return TT_ENTRY { 0, 0, 0, 0, 0 }; //return an invalid entry (flag = 0)
 }
@@ -73,25 +73,22 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
 //Set a TT entry (if improving depth)
 inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int16_t eval, MOVE move, uint8_t ply)
 {
-    // TT_INDEX tt_index = key & (TT_SIZE - 1);
-    TT_INDEX tt_index = key % tt_size;
-    TT_ENTRY entry = transpo_table[tt_index];
-
-    //insufficient depth
-    // if (entry.depth > depth)
-
-    if (entry.flag)
-    {
-        // if (depth < entry.depth)
-        if(depth + 2 * is_pv <= entry.depth - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
-            return;
-    }
-
     //Storage of mate scores
     if (eval < MATE_SCORE + 256) //getting mated
         eval -= ply;
     else if (eval > -MATE_SCORE - 256) //mating
         eval += ply;
+
+    TT_INDEX tt_index = key % tt_size;
+    TT_ENTRY entry = transpo_table[tt_index];
+
+    //3 positions of SF-preferred, if all 3 fail, always replace
+    for (uint8_t i = 0; i < 3; i++)
+    {
+        if(entry.flag && depth + 2 * is_pv <= entry.depth - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
+            entry = transpo_table[++tt_index % tt_size];
+    }
+    tt_index %= tt_size;
 
     transpo_table[tt_index].key = key;
     transpo_table[tt_index].flag = flag;
