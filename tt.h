@@ -52,7 +52,7 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
     TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry;
 
-    for (uint8_t i = 0; i < 3; i++) //cycle through 3 entries (SF; SF; AlwaysReplace)
+    for (uint8_t i = 0; i < 16; i++) //cycle through 16 entries (SF x15; AlwaysReplace)
     {
         entry = transpo_table[(tt_index + i) % tt_size];
         if (entry.key == key && entry.flag) //A valid entry with the right key
@@ -82,8 +82,8 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry = transpo_table[tt_index];
 
-    //3 positions of SF-preferred, if all 2 fail, always replace
-    for (uint8_t i = 0; i < 2; i++)
+    //15 positions of SF-preferred, if all fail, always replace
+    for (uint8_t i = 0; i < 15; i++)
     {
         if(entry.flag && depth + 2 * is_pv <= entry.depth - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
             entry = transpo_table[++tt_index % tt_size];
