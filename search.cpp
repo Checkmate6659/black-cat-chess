@@ -634,6 +634,7 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 {
 	if(!infinite) search_end_time = clock() + time_ms * CLOCKS_PER_SEC / 1000; //set the time limit (in milliseconds)
 	else search_end_time = (long)((1U << 31) - 1); //infinite time
+	clock_t flag_time = clock() + total_remaining_time; //use in time manager to avoid flagging
 	stack.ply = 0;
 
 	for (int i = 0; i < MAX_DEPTH; i++) //clear the PV length table
@@ -766,17 +767,25 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			  + TM_CUTOFF_MUL2 * prev_search_time
 			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
 					break;
+			
+			//same thing for immediate danger of flagging
+			if (flag_time - end <=
+				TM_CUTOFF_MUL * (end - start)
+			  + TM_CUTOFF_MUL2 * prev_search_time
+			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
+					break;
 
 			//decrease allocated time if the best move takes a big part of the tree			
 			clock_t current_time = search_end_time - end;
 			float frac = 1 - ((float)best_node_count/node_count);
-			frac -= 0.5; //remove some of it
-			frac /= 5;
-			frac = std::max(frac, 0.f); //clip it to avoid it being negative
+			frac -= 0.7; //remove some of it
+			frac /= 10;
+			// frac = std::max(frac, 0.f); //clip it to avoid it being negative and adding time
 			// frac = frac * frac; //square this fraction to get it closer to 0
 			// frac = frac * frac; //square it again! So in total it's frac^4
 			current_time = (clock_t)(current_time * frac); //only keep a fraction of the remaining time
 			search_end_time = current_time + end;
+			search_end_time = std::min(search_end_time, flag_time);
 		}
 
 		prev_search_time = end - start;

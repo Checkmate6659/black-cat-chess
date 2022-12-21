@@ -28,6 +28,8 @@ extern int tm_const;
 #endif
 
 
+extern clock_t total_remaining_time;
+
 uint32_t alloc_time(uint32_t time, uint32_t increment, uint8_t movestogo); //allocates time for the current move
 
 #endif
