@@ -770,9 +770,9 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			//decrease allocated time if the best move takes a big part of the tree			
 			clock_t current_time = search_end_time - end;
 			float frac = 1 - ((float)best_node_count/node_count);
-			frac -= 0.5; //remove some of it
+			frac -= 0.8; //remove some of it
 			frac = std::max(frac, 0.f); //clip it to avoid it being negative
-			frac = frac * frac; //square this fraction to get it closer to 0
+			// frac = frac * frac; //square this fraction to get it closer to 0
 			// frac = frac * frac; //square it again! So in total it's frac^4
 			current_time = (clock_t)(current_time * frac); //only keep a fraction of the remaining time
 			search_end_time = current_time + end;
