@@ -15,6 +15,9 @@
 #define HF_BETA 2
 #define HF_ALPHA 4
 
+//number of TT "buckets" (not really buckets, but instead linear incrementation)
+#define TT_BUCKETS 4 //this value works quite well
+
 #define Z_TURN (zobrist_table[129]) //b8 entry on black WPAWN board (unused, since white pawns are not black)
 #define Z_CASTLE(sq) (zobrist_table[(sq) | 128]) //black WPAWN board (unused); only uses corners of the board
 #define Z_DPP(lt) ((lt == (uint8_t)-2) ? 0 : (zobrist_table[(lt) | 128])) //black WPAWN board (unused); uses central 2 rows of the board
@@ -52,7 +55,7 @@ inline TT_ENTRY get_entry(uint64_t key, uint8_t ply)
     TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry;
 
-    for (uint8_t i = 0; i < 16; i++) //cycle through 16 entries (SF x15; AlwaysReplace)
+    for (uint8_t i = 0; i < TT_BUCKETS; i++) //cycle through TT_BUCKETS entries (SF x (TT_BUCKETS - 1); AlwaysReplace)
     {
         entry = transpo_table[(tt_index + i) % tt_size];
         if (entry.key == key && entry.flag) //A valid entry with the right key
@@ -82,8 +85,8 @@ inline void set_entry(uint64_t key, uint8_t flag, bool is_pv, uint8_t depth, int
     TT_INDEX tt_index = key % tt_size;
     TT_ENTRY entry = transpo_table[tt_index];
 
-    //15 positions of SF-preferred, if all fail, always replace
-    for (uint8_t i = 0; i < 15; i++)
+    //TT_BUCKETS - 1 positions of SF-preferred, if all fail, always replace
+    for (uint8_t i = 0; i < TT_BUCKETS - 1; i++)
     {
         if(entry.flag && depth + 2 * is_pv <= entry.depth - 3) //weird that using std::min(entry.depth, 3) doesn't give the same result, but changing <= to < doesn't change bench
             entry = transpo_table[++tt_index % tt_size];
