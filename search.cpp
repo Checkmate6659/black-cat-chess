@@ -45,6 +45,7 @@ bool panic = false;
 bool benchmark = false;
 
 uint64_t node_count = 0;
+uint64_t best_node_count = 0; //node count of best subtree
 uint64_t qcall_count = 0;
 uint64_t tt_hits = 0;
 // uint64_t collisions = 0;
@@ -326,6 +327,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	int16_t old_alpha = alpha; //save an old alpha for handling exact TT scores
 	MOVE best_move; //we need to know the best move even if we have not beaten alpha
 	int16_t best_score = MATE_SCORE;
+	uint64_t last_node_count = node_count;
 
 	score_moves(&mlist, hash_move, ply); //sort the moves by score (with the hash move)
 
@@ -423,6 +425,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		{
 			best_score = eval;
 			best_move = curmove;
+			if(!ply) best_node_count = node_count - last_node_count; //best move's subtree: save node count
 
 			if (eval > alpha) //beat alpha
 			{
@@ -469,6 +472,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				pv_length[ply] = (pv_length[ply + 1] < ply + 1) ? ply + 1 : pv_length[ply + 1]; //update PV length
 			}
 		}
+		last_node_count = node_count; //update last_node_count
 	}
 
 	repetition_table[rpt_index] = -100; //mark this entry as not being seen before (if collision, this is going to erase previous entry)
@@ -735,6 +739,7 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			std::cout << "info score cp " << eval;
 			std::cout << " depth " << (int)depth;
 			std::cout << " nodes " << node_count;
+			// std::cout << " BEST " << best_node_count;
 			std::cout << " time " << (end - start) * 1000 / CLOCKS_PER_SEC;
 			std::cout << " nps " << node_count * CLOCKS_PER_SEC / (end - start + 1); //HACK: Adding 1 clock cycle to avoid division by 0
 			std::cout << " tthits " << tt_hits; //echoing TT entry hit count
@@ -761,6 +766,14 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			  + TM_CUTOFF_MUL2 * prev_search_time
 			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
 					break;
+
+			//decrease allocated time if the best move takes a big part of the tree			
+			clock_t current_time = search_end_time - end;
+			float frac = 1 - ((float)best_node_count/node_count);
+			frac = frac * frac; //square this fraction to get it closer to 0
+			// frac = frac * frac; //square it again! So in total it's frac^4
+			current_time = (clock_t)(current_time * frac); //only keep a fraction of the remaining time
+			search_end_time = current_time + end;
 		}
 
 		prev_search_time = end - start;
