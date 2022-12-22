@@ -12,7 +12,7 @@ clock_t total_remaining_time;
 uint32_t alloc_time(uint32_t time, uint32_t increment, uint8_t movestogo)
 {
     uint32_t allocated_time = time / movestogo + increment; //basic time manager
-    total_remaining_time = (time + increment - OVERHEAD) * CLOCKS_PER_SEC / 1000; //total_remaining_time is in clock, not in ms
+    total_remaining_time = (time - OVERHEAD) * CLOCKS_PER_SEC / 1000; //total_remaining_time is in clock, not in ms
 
     //hard cap on time usage (under no circumstance use more than 7/8th of available time)
     allocated_time = std::fmin(allocated_time, 7 * time / 8);
