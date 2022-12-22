@@ -785,8 +785,11 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			// frac = frac * frac; //square it again! So in total it's frac^4
 			current_time = (clock_t)(current_time * (1 - frac)); //only keep a fraction of the remaining time
 			search_end_time = current_time + end;
+
+			//try keeping engine from flagging, but not always successful
 			search_end_time = std::min(search_end_time, flag_time);
 
+			//test command:
 			//go wtime 10000 winc 100
 		}
 

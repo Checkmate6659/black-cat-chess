@@ -8,7 +8,7 @@
 #define MIN_SEARCH_TIME 2 //minimum time to search in ms
 #define OVERHEAD 10 //extra time in ms to account for communication delays
 
-#define TUNING_TM
+// #define TUNING_TM
 
 //Cut off if next iteration will probably not finish before time runs out (larger values = more aggressive)
 #ifdef TUNING_TM
@@ -27,9 +27,12 @@ extern double tm_nodefrac_mul, tm_nodefrac_const;
 #else
 #define DEFAULT_MOVESTOGO 29 //default number of moves to go
 
-#define TM_CUTOFF_MUL 0.3763 //coef of previous search's length
-#define TM_CUTOFF_MUL2 0.5358 //coef of search at depth-2 length
+#define TM_CUTOFF_MUL 0.3855 //coef of previous search's length
+#define TM_CUTOFF_MUL2 0.5417 //coef of search at depth-2 length
 #define TM_CUTOFF_CONST -10 //constant time, in ms
+
+#define TM_NODEFRAC_MUL 0.0869 //coef of previous search's length
+#define TM_NODEFRAC_CONST 0.4784 //coef of search at depth-2 length
 #endif
 
 
