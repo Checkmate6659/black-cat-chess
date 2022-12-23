@@ -761,6 +761,9 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			//does not apply for getting mated however (since in the worst case there is nothing more to lose)
 			if (eval >= MAX_DEPTH - MATE_SCORE) break; //!= because in qsearch, ply is MAX_DEPTH
 
+			//try keeping engine from flagging, but not always successful
+			search_end_time = std::min(search_end_time, flag_time);
+
 			//premature termination: probably not enough time for next iteration
 			if (search_end_time - end <=
 				TM_CUTOFF_MUL * (end - start)
@@ -768,12 +771,12 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
 					break;
 			
-			//same thing for immediate danger of flagging
-			if (flag_time - end <=
-				TM_CUTOFF_MUL * (end - start)
-			  + TM_CUTOFF_MUL2 * prev_search_time
-			  + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
-					break;
+			// //same thing for immediate danger of flagging
+			// if (flag_time - end <=
+			// 	TM_CUTOFF_MUL * (end - start)
+			//   + TM_CUTOFF_MUL2 * prev_search_time
+			//   + (TM_CUTOFF_CONST * CLOCKS_PER_SEC / 1000) && !benchmark)
+			// 		break;
 
 			//decrease allocated time if the best move takes a big part of the tree			
 			clock_t current_time = search_end_time - end;
