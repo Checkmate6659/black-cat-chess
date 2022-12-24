@@ -8,12 +8,17 @@ double tm_nodefrac_mul = 0.1001, tm_nodefrac_const = 0.4832;
 #endif
 
 clock_t total_remaining_time;
+uint16_t moves_after_book = 0;
 
 uint32_t alloc_time(uint32_t time, uint32_t increment, uint8_t movestogo)
 {
     uint32_t allocated_time = time / movestogo + increment; //basic time manager
     //always leave 10ms extra time, beyond the rather large overhead
     total_remaining_time = (time - OVERHEAD - 10) * CLOCKS_PER_SEC / 1000; //total_remaining_time is in clock, not in ms
+
+    //formula from Cray Blitz
+    uint8_t nmoves = std::min(moves_after_book, (uint16_t)10);
+    allocated_time *= 2 - nmoves / 10; //multiplier is 2 at start, but converges towards 1; no risk of flagging
 
     //hard cap on time usage (under no circumstance use more than 7/8th of available time)
     // allocated_time = std::fmin(allocated_time, 7 * time / 8);

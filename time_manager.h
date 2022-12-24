@@ -37,6 +37,7 @@ extern double tm_nodefrac_mul, tm_nodefrac_const;
 
 
 extern clock_t total_remaining_time;
+extern uint16_t moves_after_book;
 
 uint32_t alloc_time(uint32_t time, uint32_t increment, uint8_t movestogo); //allocates time for the current move
 

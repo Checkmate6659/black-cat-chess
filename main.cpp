@@ -360,6 +360,8 @@ int main(int argc, char** argv)
 		{
 			clear_tt(); //NEW GAME: CLEAR TT
 			clear_history(); //Also clear history scores
+
+			moves_after_book = 0; //reset non-book move counter (for TM)
 		}
 		else if(command == "position")
 		{
@@ -517,6 +519,8 @@ int main(int argc, char** argv)
 			if(!time_ms && !infinite) time_ms = alloc_time(engine_time, increment, movestogo); //time_ms has not been set by a movetime command, so we need to calculate it
 			// printf("time: %u\n", time_ms);
 			search_root(time_ms, movetime, infinite, depth);
+
+			moves_after_book++; //increase number of moves after leaving book (for TM), only after search is done
 		}
 		else if (command  == "perft")
 		{
