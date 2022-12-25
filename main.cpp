@@ -80,6 +80,8 @@ OPTION uci_options[] = {
 	{"Const", "spin", -1000, 1000, (double)tm_const, ""},
 	{"NFMul", "spin", -100000, 100000, (double)(long)(tm_nodefrac_mul * 10000), ""},
 	{"NFConst", "spin", -20000, 20000, (double)(long)(tm_nodefrac_const * 10000), ""},
+	{"AfterbookLength", "spin", 1, 100, (double)tm_afterbook_length, ""},
+	{"AfterbookBonus", "spin", 0, 100000, (double)(long)(tm_afterbook_bonus * 10000), ""},
 #endif
 #endif
 };
@@ -353,6 +355,8 @@ int main(int argc, char** argv)
 			tm_const = uci_options[4].val_float;
 			tm_nodefrac_mul = uci_options[5].val_float / 10000;
 			tm_nodefrac_const = uci_options[6].val_float / 10000;
+			tm_afterbook_length = uci_options[7].val_float;
+			tm_afterbook_bonus = uci_options[8].val_float / 10000;
 #endif
 #endif
 		}

@@ -24,15 +24,23 @@ extern int tm_const;
 extern double tm_nodefrac_mul, tm_nodefrac_const;
 #define TM_NODEFRAC_MUL tm_nodefrac_mul
 #define TM_NODEFRAC_CONST tm_nodefrac_const
-#else
-#define DEFAULT_MOVESTOGO 27 //default number of moves to go
 
-#define TM_CUTOFF_MUL 0.3882 //coef of previous search's length
-#define TM_CUTOFF_MUL2 0.5644 //coef of search at depth-2 length
+extern double tm_afterbook_bonus;
+extern int tm_afterbook_length;
+#define TM_AFTERBOOK_LENGTH tm_afterbook_length
+#define TM_AFTERBOOK_BONUS tm_afterbook_bonus
+#else
+#define DEFAULT_MOVESTOGO 32 //default number of moves to go
+
+#define TM_CUTOFF_MUL 0.4231 //coef of previous search's length
+#define TM_CUTOFF_MUL2 0.5114 //coef of search at depth-2 length
 #define TM_CUTOFF_CONST -9 //constant time, in ms
 
-#define TM_NODEFRAC_MUL 0.1001 //coef of previous search's length
-#define TM_NODEFRAC_CONST 0.4832 //coef of search at depth-2 length
+#define TM_NODEFRAC_MUL 0.0751 //coef of previous search's length
+#define TM_NODEFRAC_CONST 0.0814 //coef of search at depth-2 length
+
+#define TM_AFTERBOOK_LENGTH 24
+#define TM_AFTERBOOK_BONUS 1.5217
 #endif
 
 
