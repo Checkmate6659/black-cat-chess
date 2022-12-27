@@ -498,7 +498,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		// Singular extension-like stuff
 		// With is_pv * 100, bench 990078
 		// With is_pv * 200, bench 989410
-		if (depth <= 7 && best_score < static_eval - depth * 100 - is_pv * 100)
+		if (depth <= 7 && best_score < static_eval - depth * 100 - is_pv * 200)
 		{
 			//extend
 			search(stm, depth + 1, last_target, alpha, beta, hash, nullmove - 1, ply + 1, last_zeroing_ply);
