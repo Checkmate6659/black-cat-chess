@@ -361,7 +361,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		// Late move pruning: skip late quiet moves
-		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && ply)
+		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && !incheck && ply)
 		{
 			unmake_move(stm, curmove, res); // skip move
 			continue;
@@ -516,11 +516,11 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		// Singular extension-like stuff
 		// Without any coefficient to improving, bench 845317
-		if (!is_pv && depth <= 7 && best_score < static_eval - depth * 100 - 100)
+		/* if (!is_pv && !incheck && depth <= 7 && best_score < static_eval - depth * 100 - 100)
 		{
 			// extend
 			search(stm, depth + 1, last_target, alpha, beta, hash, nullmove - 1, ply + 1, last_zeroing_ply);
-		}
+		} */
 	}
 
 	// return alpha; //FAIL HARD
