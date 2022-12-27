@@ -515,10 +515,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		set_entry(key, HF_ALPHA, is_pv, depth, alpha, best_move, ply); // upper bound
 
 		// Singular extension-like stuff
-		// Without any coefficient to is_pv, bench 992243
-		// With is_pv * 100, bench 990078
-		// With is_pv * 200, bench 989410
-		if (depth <= 7 && best_score < static_eval - depth * 100 - is_pv * 0)
+		// Without any coefficient to improving, bench 845317
+		if (!is_pv && depth <= 7 && best_score < static_eval - depth * 100 - 100)
 		{
 			// extend
 			search(stm, depth + 1, last_target, alpha, beta, hash, nullmove - 1, ply + 1, last_zeroing_ply);
