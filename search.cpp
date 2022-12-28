@@ -361,7 +361,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		}
 
 		// Late move pruning: skip late quiet moves
-		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && !incheck && ply)
+		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && !incheck && ply
+			&& static_eval - alpha <= depth * 100 + 100) //avoid LMP cutting away the only good move at low depth
 		{
 			unmake_move(stm, curmove, res); // skip move
 			continue;
