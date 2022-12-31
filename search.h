@@ -130,8 +130,11 @@ extern int16_t qs_see_chk;
 
 #define CHKEXT_MINDEPTH 6
 
-//TODO: tune LMP!
-#define LMP_MAXDEPTH 9 //cannot be tuned easily
+#define LMP_MAXDEPTH 9 //cannot be tuned easily; TODO: test increase/decrease
+
+//Razoring; TODO: tune these!
+#define RAZOR_CONST 369
+#define RAZOR_QUAD 254
 #endif
 
 // #define LMR_MINDEPTH 1 //LMR minimum depth (included)

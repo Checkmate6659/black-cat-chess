@@ -262,7 +262,8 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		if ((int8_t)depth <= 0) // go straight to qsearch
 		{
 			qcall_count++;
-			return qsearch(stm, alpha, beta, QS_CHK, hash ^ Z_TURN);
+			return qsearch(stm, alpha, beta, QS_CHK, hash ^ Z_TURN); //actually maybe it shouldn't be hash ^ Z_TURN
+			//TODO: retry qs tt without that
 		}
 #endif
 	}
@@ -322,6 +323,15 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				// return beta; //fail high, but hard
 				return std::min(null_move_val, (int16_t)NULLMOVE_MATE); // fail soft: lazy way of not returning erroneous mate scores
 		}
+
+		//Razoring (from SF)
+		//if static eval is really bad, do qsearch
+		//if qsearch bad too, well fuck this node
+		if (static_eval < alpha - RAZOR_CONST - RAZOR_QUAD * depth * depth)
+		{
+			int16_t razor_val = qsearch(stm, alpha - 1, alpha, QS_CHK, hash);
+			if (razor_val < alpha) return razor_val;
+		}
 	}
 
 	MLIST mlist;
@@ -362,7 +372,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 
 		// Late move pruning: skip late quiet moves
 		if (curmove.score < LOUD_MOVE && depth < LMP_MAXDEPTH && legal_move_count >= lmp_table[depth][improving] && !is_pv && !incheck && ply
-			&& static_eval - alpha <= depth * 150 + 200) //avoid LMP cutting away the only good move at low depth
+			/* && static_eval - alpha <= depth * 150 + 200 */) //avoid LMP cutting away the only good move at low depth
 		{
 			unmake_move(stm, curmove, res); // skip move
 			continue;
@@ -528,6 +538,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	return best_score; // FAIL SOFT
 }
 
+//TODO: try fail soft in QS; retry hash, but calling qs with just hash, not hash ^ Z_TURN (may have caused the prior failures)
 int16_t qsearch(uint8_t stm, int16_t alpha, int16_t beta, int8_t check_ply, uint64_t hash)
 {
 	uint16_t hash_move = 0;
