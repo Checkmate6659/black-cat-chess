@@ -5,7 +5,6 @@
 // #include <time.h>
 #include "board.h"
 
-#define MIN_SEARCH_TIME 1 //minimum time to search in ms
 #define OVERHEAD 10 //extra time in ms to account for communication delays
 
 // #define TUNING_TM

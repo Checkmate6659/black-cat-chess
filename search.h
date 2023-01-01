@@ -133,6 +133,7 @@ extern int16_t qs_see_chk;
 #define LMP_MAXDEPTH 9 //cannot be tuned easily; TODO: test increase/decrease
 
 //Razoring; TODO: tune these!
+#define RAZOR_DEPTH 2
 #define RAZOR_CONST 369
 #define RAZOR_QUAD 254
 #endif
