@@ -323,15 +323,6 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 				// return beta; //fail high, but hard
 				return std::min(null_move_val, (int16_t)NULLMOVE_MATE); // fail soft: lazy way of not returning erroneous mate scores
 		}
-
-		//Razoring (from SF, but added depth limit)
-		//if static eval is really bad, do qsearch
-		//if qsearch bad too, well fuck this node
-		if (depth <= RAZOR_DEPTH && static_eval < alpha - RAZOR_CONST - RAZOR_QUAD * depth * depth)
-		{
-			int16_t razor_val = qsearch(stm, alpha - 1, alpha, QS_CHK, hash);
-			if (razor_val < alpha) return razor_val;
-		}
 	}
 
 	MLIST mlist;
