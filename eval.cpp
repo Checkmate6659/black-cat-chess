@@ -199,11 +199,11 @@ int16_t evaluate(uint8_t stm)
     int32_t nnue_result = eval_nnue_inc(stm, &stack);
 
     //compute phase
-    uint8_t phase = 0;
-    for (uint8_t plist_idx = 0; plist_idx < 32; plist_idx++) //iterate through all pieces
-		phase += game_phase[board[plist[plist_idx]] & PTYPE]; //count phase
+    uint8_t phase = TOTAL_PHASE;
+    for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
+		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //count phase
 
     //scale evaluation
-    uint16_t multiplier = 256 + phase * 11; //11 should about double the result in pawn endgames
+    uint16_t multiplier = 256 + phase * 11; //increase value towards endgame
     return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) >> 8, 9999L), -9999L); //clamp the final eval
 }
