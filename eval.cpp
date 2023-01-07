@@ -204,6 +204,6 @@ int16_t evaluate(uint8_t stm)
 		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //count phase
 
     //scale evaluation
-    uint16_t multiplier = 256 + phase * 11; //increase value towards endgame
+    uint16_t multiplier = 256 + phase; //increase value towards endgame
     return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) >> 8, 9999L), -9999L); //clamp the final eval
 }
