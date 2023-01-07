@@ -195,6 +195,15 @@ const int16_t *eg_psqt[] = {
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
-    int nnue_result = eval_nnue_inc(stm, &stack);
-    return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the nnue result
+    //get NNUE result
+    int32_t nnue_result = eval_nnue_inc(stm, &stack);
+
+    //compute phase
+    uint8_t phase = 0;
+    for (uint8_t plist_idx = 0; plist_idx < 32; plist_idx++) //iterate through all pieces
+		phase += game_phase[board[plist[plist_idx]] & PTYPE]; //count phase
+
+    //scale evaluation
+    uint16_t multiplier = 256 + phase * 11; //11 should about double the result in pawn endgames
+    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) >> 8, 9999L), -9999L); //clamp the final eval
 }
