@@ -195,15 +195,23 @@ const int16_t *eg_psqt[] = {
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
+/*     //compute number of each piece
+    uint8_t npiece[16] = {}; //initialize number of pieces to 0
+    for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
+        if (plist[plist_idx] != 0xff) //piece not captured
+    		npiece[board[plist[plist_idx]] & 15]++; //add 1 to the number of that piece */
+
     //get NNUE result
     int32_t nnue_result = eval_nnue_inc(stm, &stack);
 
     //compute phase
-    uint8_t phase = TOTAL_PHASE;
+    uint8_t phase = TOTAL_PHASE; //phase
     for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
-		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //count phase
+        if (plist[plist_idx] != 0xff) //piece not captured
+    		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //compute phase
+    
+    // return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the NNUE result
 
-    //scale evaluation
-    uint16_t multiplier = 256 + phase; //increase value towards endgame
-    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) >> 8, 9999L), -9999L); //clamp the final eval
+    uint16_t multiplier = 256 + phase * 4;
+    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) / 256, 9999L), -9999L); //clamp the final eval
 }
