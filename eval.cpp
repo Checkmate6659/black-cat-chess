@@ -212,6 +212,6 @@ int16_t evaluate(uint8_t stm)
     
     // return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the NNUE result
 
-    uint16_t multiplier = 256 + phase * 4;
-    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) / 256, 9999L), -9999L); //clamp the final eval
+    uint16_t multiplier = 512 + phase;
+    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) / 512, 9999L), -9999L); //clamp the final eval
 }
