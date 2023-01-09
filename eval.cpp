@@ -192,26 +192,42 @@ const int16_t *eg_psqt[] = {
     eg_queen_table,
 };
 
+uint8_t eg_win_material[] = {0, 5, 5, 2, 0, 3, 5, 5}; //at least 3 knights or 2 bishops; or knight + bishop
+
 //Evaluation function
 int16_t evaluate(uint8_t stm)
 {
-/*     //compute number of each piece
-    uint8_t npiece[16] = {}; //initialize number of pieces to 0
-    for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
+    //do both sides have enough pieces to win in an endgame?
+    uint8_t win_material_white = 0;
+    uint8_t win_material_black = 0;
+    for (uint8_t plist_idx = 1; plist_idx < 16; plist_idx++) //iterate through pieces (black king can be skipped ez)
         if (plist[plist_idx] != 0xff) //piece not captured
-    		npiece[board[plist[plist_idx]] & 15]++; //add 1 to the number of that piece */
+    		win_material_black += eg_win_material[board[plist[plist_idx]] & PTYPE];
+    for (uint8_t plist_idx = 17; plist_idx < 32; plist_idx++) //iterate through pieces (black king can be skipped ez)
+        if (plist[plist_idx] != 0xff) //piece not captured
+    		win_material_white += eg_win_material[board[plist[plist_idx]] & PTYPE];
+
+    if (win_material_black < 5 && win_material_white < 5) return 0; //no side can win!
+
+    //compute number of each piece
+    // uint8_t npiece[16] = {}; //initialize number of pieces to 0
+    // for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
+    //     if (plist[plist_idx] != 0xff) //piece not captured
+    // 		npiece[board[plist[plist_idx]] & 15]++; //add 1 to the number of that piece
 
     //get NNUE result
     int32_t nnue_result = eval_nnue_inc(stm, &stack);
+    //clamp the NNUE result depending on who has enough material to win
+    nnue_result = (int16_t)std::max(std::min(nnue_result, 9999 * (win_material_white >= 5)), -9999 * (win_material_black >= 5));
 
     //compute phase
-    uint8_t phase = TOTAL_PHASE; //phase
-    for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
-        if (plist[plist_idx] != 0xff) //piece not captured
-    		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //compute phase
+    // uint8_t phase = TOTAL_PHASE; //phase
+    // for (uint8_t plist_idx = 1; plist_idx < 32; plist_idx++) //iterate through all pieces (black king can be skipped ez)
+    //     if (plist[plist_idx] != 0xff) //piece not captured
+    // 		phase -= game_phase[board[plist[plist_idx]] & PTYPE]; //compute phase
     
-    // return (int16_t)std::max(std::min(nnue_result, 9999), -9999); //clamp the NNUE result
+    return nnue_result;
 
-    uint16_t multiplier = 512 + phase;
-    return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) / 512, 9999L), -9999L); //clamp the final eval
+    // #uint16_t multiplier = 512 + phase;
+    // return (int16_t)std::max(std::min(((int64_t)nnue_result * multiplier) / 512, 9999L), -9999L); //clamp the final eval
 }
