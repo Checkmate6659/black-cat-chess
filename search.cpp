@@ -188,7 +188,6 @@ bool nullmove_safe(uint8_t stm)
 	return false; // Null move is dangerous: late endgame, zugzwang likely
 }
 
-// TODO: implement draw by insufficient material
 int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, int16_t beta, uint64_t hash, int8_t nullmove, uint8_t ply, int8_t last_zeroing_ply)
 {
 	if (check_time())
@@ -247,10 +246,26 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 		hash_move = entry.move;
 	}
 
+	//draw by insufficient material: only active after a quick search (find basic checkmates)
+	if (ply > 4 && total_pieces < 5) //with 2 kings + 3 pieces for 1 side, we always have a winner
+	{
+		//material sufficiency computation routine: pawn, rook, queen, 3*knight, 2*bishop, knight+bishop
+		uint8_t win_material_white = 0;
+		uint8_t win_material_black = 0;
+		for (uint8_t plist_idx = 1; plist_idx < 16; plist_idx++) //iterate through pieces (black king can be skipped ez)
+			if (plist[plist_idx] != 0xff) //piece not captured
+				win_material_black += eg_win_material[board[plist[plist_idx]] & PTYPE];
+		for (uint8_t plist_idx = 17; plist_idx < 32; plist_idx++) //iterate through pieces (black king can be skipped ez)
+			if (plist[plist_idx] != 0xff) //piece not captured
+				win_material_white += eg_win_material[board[plist[plist_idx]] & PTYPE];
+
+		if (win_material_black < 5 && win_material_white < 5) return INSUFFICIENT_MATERIAL; //no side can win: insufficient material
+	}
+
 	if (!depth || ply == MAX_DEPTH)
 	{
 		qcall_count++;
-		return qsearch(stm, alpha, beta, QS_CHK, hash ^ Z_TURN);
+		return qsearch(stm, alpha, beta, QS_CHK, hash);
 	}
 
 	// Internal Iterative Reduction

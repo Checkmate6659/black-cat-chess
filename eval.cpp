@@ -192,7 +192,7 @@ const int16_t *eg_psqt[] = {
     eg_queen_table,
 };
 
-uint8_t eg_win_material[] = {0, 5, 5, 2, 0, 3, 5, 5}; //at least 3 knights or 2 bishops; or knight + bishop
+const uint8_t eg_win_material[] = {0, 5, 5, 2, 0, 3, 5, 5}; //at least 3 knights or 2 bishops; or knight + bishop
 
 //Evaluation function
 int16_t evaluate(uint8_t stm)
@@ -207,7 +207,7 @@ int16_t evaluate(uint8_t stm)
         if (plist[plist_idx] != 0xff) //piece not captured
     		win_material_white += eg_win_material[board[plist[plist_idx]] & PTYPE];
 
-    if (win_material_black < 5 && win_material_white < 5) return 0; //no side can win!
+    if (win_material_black < 5 && win_material_white < 5) return INSUFFICIENT_MATERIAL; //no side can win!
 
     //compute number of each piece
     // uint8_t npiece[16] = {}; //initialize number of pieces to 0
