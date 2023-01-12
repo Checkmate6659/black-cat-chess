@@ -71,7 +71,7 @@ const int8_t offsets[] = {
 
 int16_t SEE_VALUES[] = {0, 100, 100, 397, 16383, 443, 694, 1311}; //SEE values for each piece type (variable to enable tuning; will be reset to constant later)
 
-uint8_t total_pieces = 14; //total number of white and black pieces, excluding pawns/kings
+uint8_t total_pieces = 30; //total number of white and black pieces/pawns, excluding kings
 
 
 void print_board(uint8_t *b)
@@ -187,7 +187,8 @@ void load_fen(std::string fen)
 			}
 
 			//count up the pieces
-			if ((board[sq] & PTYPE) > KING || (board[sq] & PTYPE) == KNIGHT) total_pieces++;
+			//if ((board[sq] & PTYPE) > KING || (board[sq] & PTYPE) == KNIGHT) total_pieces++;
+			if ((board[sq] & PTYPE) != KING) total_pieces++;
 
 			if (c < 'a')
 			{

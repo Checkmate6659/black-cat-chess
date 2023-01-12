@@ -247,7 +247,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	}
 
 	//draw by insufficient material: only active after a quick search (find basic checkmates)
-	if (ply > 8 && total_pieces < 5) //with 2 kings + 3 pieces for 1 side, we always have a winner
+	if (ply > 4 && total_pieces < 3) //with 2 kings + 3 pieces for 1 side, we always have a winner
 	{
 		//material sufficiency computation routine: pawn, rook, queen, 3*knight, 2*bishop, knight+bishop
 		uint8_t win_material_white = 0;
