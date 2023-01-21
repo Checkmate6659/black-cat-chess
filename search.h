@@ -89,8 +89,8 @@ extern int16_t qs_see_chk;
 
 //Draw scores for different endings to implement different contempt factors (TODO: insufficient mating material)
 #define STALEMATE 0 //Stalemate: side to move has no legal moves
-#define REPETITION 0 //Draw score when we repeated moves (twofold)
-#define FIFTY_MOVE 0 //Opponent has made the last move and ended the game
+#define REPETITION ((node_count & 3) - 2) //Draw score when we repeated moves (twofold)
+#define FIFTY_MOVE ((node_count & 3) - 2) //Opponent has made the last move and ended the game
 
 #define QS_CHK 0 //look at QS_CHK check max in qsearch (disabled for now)
 #define QS_SEE_NOCHK 88

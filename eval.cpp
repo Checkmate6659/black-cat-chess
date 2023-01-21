@@ -198,7 +198,7 @@ const uint8_t eg_win_material[] = {0, 5, 5, 2, 0, 3, 5, 5}; //at least 3 knights
 int16_t evaluate(uint8_t stm)
 {
     //do both sides have enough pieces to win in an endgame?
-    uint8_t win_material_white = 0;
+    /* uint8_t win_material_white = 0;
     uint8_t win_material_black = 0;
     for (uint8_t plist_idx = 1; plist_idx < 16; plist_idx++) //iterate through pieces (black king can be skipped ez)
         if (plist[plist_idx] != 0xff) //piece not captured
@@ -207,7 +207,7 @@ int16_t evaluate(uint8_t stm)
         if (plist[plist_idx] != 0xff) //piece not captured
     		win_material_white += eg_win_material[board[plist[plist_idx]] & PTYPE];
 
-    if (win_material_black < 5 && win_material_white < 5) return INSUFFICIENT_MATERIAL; //no side can win!
+    if (win_material_black < 5 && win_material_white < 5) return INSUFFICIENT_MATERIAL; //no side can win! */
 
     //compute number of each piece
     // uint8_t npiece[16] = {}; //initialize number of pieces to 0
@@ -218,7 +218,8 @@ int16_t evaluate(uint8_t stm)
     //get NNUE result
     int32_t nnue_result = eval_nnue_inc(stm, &stack);
     //clamp the NNUE result depending on who has enough material to win
-    nnue_result = (int16_t)std::max(std::min(nnue_result, 9999 * (win_material_white >= 5)), -9999 * (win_material_black >= 5));
+    nnue_result = (int16_t)std::max(std::min(nnue_result, 9999), -9999);
+    //nnue_result = (int16_t)std::max(std::min(nnue_result, 9999 * (win_material_white >= 5)), -9999 * (win_material_black >= 5));
 
     //compute phase
     // uint8_t phase = TOTAL_PHASE; //phase
