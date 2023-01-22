@@ -213,7 +213,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	TT_ENTRY entry = get_entry(key, ply); // Try to get a TT entry
 
 	// if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
-	if (entry.flag) // TT hit
+	if (ply - last_zeroing_ply < 80 && entry.flag) // TT hit; more than 10 moves till zeroing
 	{
 		// TODO: check for collisions! (is the move legal, or pseudo-legal)
 		// and if there are collisions, get around them somehow
