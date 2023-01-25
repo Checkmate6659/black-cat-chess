@@ -213,7 +213,7 @@ int16_t search(uint8_t stm, uint8_t depth, uint8_t last_target, int16_t alpha, i
 	TT_ENTRY entry = get_entry(key, ply); // Try to get a TT entry
 
 	// if i dont check for the move being acceptable, the depth just skyrockets all the way up to 127!!!
-	if (ply - last_zeroing_ply < 80 && entry.flag) // TT hit; more than 10 moves till zeroing
+	if (entry.flag) // TT hit
 	{
 		// TODO: check for collisions! (is the move legal, or pseudo-legal)
 		// and if there are collisions, get around them somehow
@@ -689,7 +689,8 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 
 	// NOTE: clearing hist is probably bad, but not doing it lost lots of elo
 	// Not because lack of tuning
-	clear_history(); // clear history (otherwise risk of saturation, which makes history useless)
+	//clear_history(); // clear history (otherwise risk of saturation, which makes history useless)
+	for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] >>= 1; //divide by 2
 
 	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; // hash, NOT key!
 
