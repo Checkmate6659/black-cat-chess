@@ -690,7 +690,7 @@ void search_root(uint32_t time_ms, bool movetime, bool infinite, uint8_t fixed_d
 	// NOTE: clearing hist is probably bad, but not doing it lost lots of elo
 	// Not because lack of tuning
 	//clear_history(); // clear history (otherwise risk of saturation, which makes history useless)
-	for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] >>= 1; //divide by 2
+	for (uint16_t i = 0; i < HIST_LENGTH; i++) history[i] >>= 2; //divide by 4
 
 	uint64_t hash = board_hash(board_stm, board_last_target) ^ Z_DPP(board_last_target) ^ Z_TURN; // hash, NOT key!
 
